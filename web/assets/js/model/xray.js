@@ -1379,13 +1379,13 @@ class Inbound extends XrayCommonClass {
         if(this.clients){
            let links = [];
            this.clients.forEach((client) => {
-                genAllLinks(remark,client).forEach(l => {
+                this.genAllLinks(remark,client).forEach(l => {
                     links.push(l.link);
                 })
             });
             return links.join('\r\n');
         } else {
-            if(this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(this.listen, this.port, forceTls, remark);
+            if(this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(this.listen, this.port, 'same', remark);
             return '';
         }
     }
