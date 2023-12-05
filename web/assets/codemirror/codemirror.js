@@ -1741,7 +1741,7 @@
     // is needed on Webkit to be able to get line-level bounding
     // rectangles for it (in measureChar).
     var content = eltP("span", null, null, webkit ? "padding-right: .1px" : null);
-    var builder = {pre: eltP("pre", [content], "CodeMirror-line"), content: content,
+    var builder = {pre: eltP("pre", [content], "CodeMirror-line Line-Hover"), content: content,
                    col: 0, pos: 0, cm: cm,
                    trailingSpace: false,
                    splitSpaces: cm.getOption("lineWrapping")};

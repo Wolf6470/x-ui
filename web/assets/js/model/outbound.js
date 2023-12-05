@@ -581,6 +581,7 @@ class Outbound extends CommonClass {
 
         if (!match) return null;
         let [, protocol, userData, address, port, ] = match;
+        port *= 1;
         if(protocol == 'ss') {
             protocol = 'shadowsocks';
             userData = atob(userData).split(':');
@@ -746,12 +747,13 @@ Outbound.VmessSettings = class extends CommonClass {
     }
 };
 Outbound.VLESSSettings = class extends CommonClass {
-    constructor(address, port, id, flow) {
+    constructor(address, port, id, flow, encryption='none') {
         super();
         this.address = address;
         this.port = port;
         this.id = id;
         this.flow = flow;
+        this.encryption = encryption
     }
 
     static fromJson(json={}) {
@@ -761,6 +763,7 @@ Outbound.VLESSSettings = class extends CommonClass {
             json.vnext[0].port,
             json.vnext[0].users[0].id,
             json.vnext[0].users[0].flow,
+            json.vnext[0].users[0].encryption,
         );
     }
 
@@ -769,7 +772,7 @@ Outbound.VLESSSettings = class extends CommonClass {
             vnext: [{
                 address: this.address,
                 port: this.port,
-                users: [{id: this.id, flow: this.flow}],
+                users: [{id: this.id, flow: this.flow, encryption: 'none',}],
             }],
         };
     }
@@ -812,7 +815,7 @@ Outbound.ShadowsocksSettings = class extends CommonClass {
     }
 
     static fromJson(json={}) {
-        servers = json.servers;
+        let servers = json.servers;
         if(ObjectUtil.isArrEmpty(servers)) servers=[{}];
         return new Outbound.ShadowsocksSettings(
             servers[0].address,
