@@ -8,7 +8,7 @@
     <table width="100%" class="ant-table-tbody" v-if="externalProxy">
         <tr style="line-height: 40px;">
             <td width="100%">
-                <a-input-group style="margin-top:5px;" compact v-for="(row, index) in inbound.stream.externalProxy">
+                <a-input-group style="margin: 0 5px;" compact v-for="(row, index) in inbound.stream.externalProxy">
                     <template>
                         <a-tooltip title="Force TLS">
                             <a-select v-model="row.forceTls" style="width:20%; margin: 0px" :dropdown-class-name="themeSwitcher.currentTheme">

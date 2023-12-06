@@ -373,6 +373,7 @@
 "editOutbound" = "ویرایش خروجی"
 "editReverse" = "ویرایش معکوس"
 "tag" = "برچسب"
+"tagDesc" = "برچسب یگانه"
 "address" = "آدرس"
 "reverse" = "معکوس"
 "domain" = "دامنه"
@@ -380,7 +381,6 @@
 "bridge" = "پل"
 "portal" = "پرتال"
 "intercon" = "اتصال میانی"
-
 
 [tgbot]
 "noResult" = "❗ نتیجه‌ای یافت نشد!"

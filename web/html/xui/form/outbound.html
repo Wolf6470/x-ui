@@ -17,8 +17,8 @@
         <tr>
             <td>{{ i18n "pages.xray.outbound.tag" }}</td>
             <td>
-                <a-form-item>
-                    <a-input v-model.trim="outbound.tag" style="width: 250px" @change="outModal.check()" :style="outModal.duplicateTag? 'border-color: red;' : ''"></a-input>
+                <a-form-item has-feedback :validate-status="outModal.duplicateTag? 'warning' : 'success'">
+                    <a-input v-model.trim="outbound.tag" style="width: 250px" @change="outModal.check()" placeholder='{{ i18n "pages.xray.outbound.tagDesc" }}'></a-input>
                 </a-form-item>
             </td>
         </tr>
@@ -126,7 +126,7 @@
             <td>{{ i18n "pages.inbounds.port" }}</td>
             <td>
                 <a-form-item>
-                    <a-input-number v-model.number="outbound.settings.port"></a-input-number>
+                    <a-input-number v-model.number="outbound.settings.port" :min="1" :max="65532"></a-input-number>
                 </a-form-item>
             </td>
         </tr>
@@ -529,7 +529,6 @@
                     </td>
                 </tr>
         </template>
-</template>
 </template>
     </table>
 </a-form>
