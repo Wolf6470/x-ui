@@ -170,6 +170,10 @@
 "subscriptionDesc" = "You can find your sub link on Details, also you can use the same name for several configurations"
 "info" = "Info"
 "same" = "Same"
+"inboundData" = "Inbound's data"
+"copyToClipboard" = "Copy to clipboard"
+"import" = "Import"
+"importInbound" = "Import an inbound"
 
 [pages.client]
 "add" = "Add Client"
@@ -233,6 +237,8 @@
 "panelUrlPathDesc" = "Must start with '/' and end with '/'"
 "pageSize" = "Pagination size"
 "pageSizeDesc" = "Define page size for inbounds table. Set 0 to disable"
+"remarkModel" = "Remark Model and Seperation charachter"
+"sampleRemark" = "Sample remark"
 "oldUsername" = "Current Username"
 "currentPassword" = "Current Password"
 "newUsername" = "New Username"

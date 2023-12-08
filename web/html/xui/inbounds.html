@@ -125,6 +125,10 @@
                                             <template v-if="!isMobile">{{ i18n "pages.inbounds.generalActions" }}</template>
                                         </a-button>
                                         <a-menu slot="overlay" @click="a => generalActions(a)" :theme="themeSwitcher.currentTheme">
+                                            <a-menu-item key="import">
+                                                <a-icon type="import"></a-icon>
+                                                {{ i18n "pages.inbounds.importInbound" }}
+                                            </a-menu-item>
                                             <a-menu-item key="export">
                                                 <a-icon type="export"></a-icon>
                                                 {{ i18n "pages.inbounds.export" }}
@@ -225,6 +229,10 @@
                                         </template>
                                         <a-menu-item key="resetTraffic">
                                             <a-icon type="retweet"></a-icon> {{ i18n "pages.inbounds.resetTraffic" }}
+                                        </a-menu-item>
+                                        <a-menu-item key="clipboard">
+                                            <a-icon type="copy"></a-icon>
+                                            {{ i18n "pages.inbounds.copyToClipboard" }}
                                         </a-menu-item>
                                         <a-menu-item key="clone">
                                             <a-icon type="block"></a-icon> {{ i18n "pages.inbounds.clone"}}
@@ -546,6 +554,7 @@
                 enable : false,
                 subURI : ''
             },
+            remarkModel: '-ieo',
             tgBotEnable: false,
             showAlert: false,
             pageSize: 0,
@@ -591,6 +600,7 @@
                         subURI: subURI
                     };
                     this.pageSize = pageSize;
+                    this.remarkModel = remarkModel;
                 }
             },
             setInbounds(dbInbounds) {
@@ -707,6 +717,9 @@
             },
             generalActions(action) {
                 switch (action.key) {
+                    case "import":
+                        this.importInbound();
+                        break;
                     case "export":
                         this.exportAllLinks();
                         break;
@@ -740,6 +753,9 @@
                         break;
                     case "export":
                         this.inboundLinks(dbInbound.id);
+                        break;
+                    case "clipboard":
+                        this.copyToClipboard(dbInbound.id);
                         break;
                     case "resetTraffic":
                         this.resetTraffic(dbInbound.id);
@@ -792,7 +808,7 @@
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.cloneInbound"}} \"' + dbInbound.remark + '\"',
                     content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
-                    okText: '{{ i18n "pages.inbounds.update"}}',
+                    okText: '{{ i18n "pages.inbounds.clone"}}',
                     class: themeSwitcher.currentTheme,
                     cancelText: '{{ i18n "cancel" }}',
                     onOk: () => {
@@ -928,7 +944,7 @@
             resetTraffic(dbInboundId) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.resetTraffic"}}',
+                    title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' #' + dbInboundId,
                     content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
                     class: themeSwitcher.currentTheme,
                     okText: '{{ i18n "reset"}}',
@@ -943,7 +959,7 @@
             },
             delInbound(dbInboundId) {
                 this.$confirm({
-                    title: '{{ i18n "pages.inbounds.deleteInbound"}}',
+                    title: '{{ i18n "pages.inbounds.deleteInbound"}}' + ' #' + dbInboundId,
                     content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
                     class: themeSwitcher.currentTheme,
                     okText: '{{ i18n "delete"}}',
@@ -956,7 +972,7 @@
                 clientId = this.getClientId(dbInbound.protocol, client);
                 if (confirmation){
                     this.$confirm({
-                        title: '{{ i18n "pages.inbounds.deleteClient"}}',
+                        title: '{{ i18n "pages.inbounds.deleteClient"}}' + ' ' + client.email,
                         content: '{{ i18n "pages.inbounds.deleteClientContent"}}',
                         class: themeSwitcher.currentTheme,
                         okText: '{{ i18n "delete"}}',
@@ -1037,7 +1053,7 @@
             resetClientTraffic(client, dbInboundId, confirmation = true) {
                 if (confirmation){
                     this.$confirm({
-                        title: '{{ i18n "pages.inbounds.resetTraffic"}}',
+                        title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,
                         content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
                         class: themeSwitcher.currentTheme,
                         okText: '{{ i18n "reset"}}',
@@ -1159,14 +1175,30 @@
             inboundLinks(dbInboundId) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
-                txtModal.show('{{ i18n "pages.inbounds.export"}}', newDbInbound.genInboundLinks, newDbInbound.remark);
+                txtModal.show('{{ i18n "pages.inbounds.export"}}', newDbInbound.genInboundLinks(this.remarkModel), newDbInbound.remark);
+            },
+            importInbound() {
+                promptModal.open({
+                    title: '{{ i18n "pages.inbounds.importInbound" }}',
+                    type: 'textarea',
+                    value: '',
+                    okText: '{{ i18n "pages.inbounds.import" }}',
+                    confirm: async (dbInboundText) => {
+                        await this.submit('/xui/inbound/import', {data: dbInboundText}, promptModal);
+                        promptModal.close();
+                    },
+                });
             },
 			exportAllLinks() {
                 let copyText = [];
                 for (const dbInbound of this.dbInbounds) {
-                    copyText.push(dbInbound.genInboundLinks);
+                    copyText.push(dbInbound.genInboundLinks(this.remarkModel));
                 }
                 txtModal.show('{{ i18n "pages.inbounds.export"}}', copyText.join('\r\n'), 'All-Inbounds');
+            },
+            copyToClipboard(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                txtModal.show('{{ i18n "pages.inbounds.inboundData" }}', JSON.stringify(dbInbound, null, 2));
             },
             async startDataRefreshLoop() {
                 while (this.isRefreshEnabled) {

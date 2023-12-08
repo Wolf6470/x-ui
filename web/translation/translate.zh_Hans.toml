@@ -170,6 +170,10 @@
 "subscriptionDesc" = "您可以在详细信息上找到您的子链接，也可以对多个配置使用相同的名称"
 "info" = "信息"
 "same" = "相同"
+"inboundData" = "入站数据"
+"copyToClipboard" = "复制到剪贴板"
+"import"="导入"
+"importInbound" = "导入入站"
 
 [pages.client]
 "add" = "添加客户端"
@@ -233,6 +237,8 @@
 "panelUrlPathDesc" = "必须以 '/' 开头，以 '/' 结尾"
 "pageSize" = "分页大小"
 "pageSizeDesc" = "定义入站表的页面大小。设置 0 表示禁用"
+"remarkModel" = "备注模型和分隔符"
+"sampleRemark" = "备注示例"
 "oldUsername" = "原用户名"
 "currentPassword" = "原密码"
 "newUsername" = "新用户名"

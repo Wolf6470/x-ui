@@ -5,7 +5,7 @@
     <a-switch v-model="externalProxy"></a-switch>
     <a-button v-if="externalProxy" type="primary" style="margin-left: 10px" size="small" @click="inbound.stream.externalProxy.push({forceTls: 'same', dest: '', port: 443, remark: ''})">+</a-button>
     </a-form-item>
-    <table width="100%" class="ant-table-tbody" v-if="externalProxy">
+    <table width="100%" class="ant-table-tbody" v-if="externalProxy" style="margin-bottom:5px">
         <tr style="line-height: 40px;">
             <td width="100%">
                 <a-input-group style="margin: 0 5px;" compact v-for="(row, index) in inbound.stream.externalProxy">

@@ -148,7 +148,7 @@
 "client" = "کاربر"
 "export" = "استخراج لینک‌ها"
 "clone" = "شبیه سازی"
-"cloneInbound" = "ایجاد"
+"cloneInbound" = "شبیه‌سازی سرویس"
 "cloneInboundContent" = "همه موارد این ورودی بجز پورت ، ای پی و کلاینت ها شبیه سازی خواهند شد"
 "resetAllTraffic" = "ریست ترافیک کل سرویس ها"
 "resetAllTrafficTitle" = "ریست ترافیک کل سرویس ها"
@@ -169,6 +169,10 @@
 "subscriptionDesc" = "می توانید ساب لینک خود را در جزئیات پیدا کنید، همچنین می توانید از همین نام برای چندین کانفیگ استفاده کنید"
 "info" = "اطلاعات"
 "same" = "همسان"
+"inboundData" = "داده‌های سرویس"
+"copyToClipboard" = "کپی در حافظه"
+"import" = "وارد کردن"
+"importInbound" = "وارد کردن یک سرویس"
 
 [pages.client]
 "add" = "کاربر جدید"
@@ -232,6 +236,8 @@
 "panelUrlPathDesc" = "باید با '/' شروع شود و با '/' تمام شود"
 "pageSize" = "اندازه صفحه بندی جدول"
 "pageSizeDesc" = "اندازه صفحه را برای جدول سرویس ها تعریف کنید. 0: غیرفعال"
+"remarkModel" = "نام کانفیگ و جداکننده"
+"sampleRemark" = "نمونه نام"
 "oldUsername" = "نام کاربری فعلی"
 "currentPassword" = "رمز عبور فعلی"
 "newUsername" = "نام کاربری جدید"

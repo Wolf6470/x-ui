@@ -139,7 +139,7 @@ function userExpiryColor(threshold, client, isDark = false) {
         case now < expiry - threshold:
             return "#0e49b5";
         case now < expiry:
-            return "#ffa031";
+            return "#f37b24";
         default:
             return "#e04141";
     }
