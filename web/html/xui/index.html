@@ -164,13 +164,26 @@
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            {{ i18n "pages.index.connectionCount" }}: TCP: [[ status.tcpCount ]]  UDP: [[ status.udpCount ]]
-                            <a-tooltip>
-                                <template slot="title">
-                                    {{ i18n "pages.index.connectionCountDesc" }}
-                                </template>
-                                <a-icon type="question-circle" theme="filled"></a-icon>
-                            </a-tooltip>
+                            <a-row>
+                                <a-col :span="12">
+                                    TCP:  [[ status.tcpCount ]]
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            {{ i18n "pages.index.connectionTcpCountDesc" }}
+                                        </template>
+                                        <a-icon type="question-circle" theme="filled"></a-icon>
+                                    </a-tooltip>
+                                </a-col>
+                                <a-col :span="12">
+                                    UDP:  [[ status.udpCount ]]
+                                    <a-tooltip>
+                                        <template slot="title">
+                                            {{ i18n "pages.index.connectionUdpCountDesc" }}
+                                        </template>
+                                        <a-icon type="question-circle" theme="filled"></a-icon>
+                                    </a-tooltip>
+                                </a-col>
+                            </a-row>
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">

@@ -24,26 +24,17 @@
 | ------------------------------------ | :----------------: |
 | Multi-Protocol                       | :heavy_check_mark: |
 | Multi-Language                       | :heavy_check_mark: |
-| Advanced Traffic Routing             | :heavy_check_mark: |
-| Dark/Light Theme                     | :heavy_check_mark: |
-| Search in Deep                       | :heavy_check_mark: |
-| Multi-User Inbounds                  | :heavy_check_mark: |
-| Multi-User Traffic & Expire Date     | :heavy_check_mark: |
+| Multi-User Inbounds                  |:heavy_check_mark:  |
+|Advanced Traffic Routing              | :heavy_check_mark: |
 | REST API                             | :heavy_check_mark: |
+|Show Online Users                     | :heavy_check_mark: |
+| Manage Users Traffic Data & Expiry Date  | :heavy_check_mark: |
+| Apply Expiry Date based on First Usage   |     :heavy_check_mark: |
 | Telegram Bot (admin + clients)       | :heavy_check_mark: |
 | Database Backup using Telegram Bot   | :heavy_check_mark: |
 | Subscription Link + UserInfo         | :heavy_check_mark: |
-| Calculate Expire Date on First Usage | :heavy_check_mark: |
-| Show Online Users                    | :heavy_check_mark: |
-
-
-## Languages
-
-- English
-- Chinese
-- Farsi
-- Russian
-- Vietnamese
+| Search in Deep                       | :heavy_check_mark: |
+| Dark/Light Theme                     | :heavy_check_mark: |
 
   
 ## Install & Upgrade to Latest Version
@@ -109,19 +100,27 @@ docker run -itd \
 docker build -t x-ui .
 ```
 
+## Languages
+
+- English
+- Chinese
+- Farsi
+- Russian
+- Vietnamese
+
 ## Features
 
 - Supported protocols: VMess, VLESS, Trojan, Shadowsocks, Dokodemo-door, SOCKS, HTTP
 - Support XTLS native encryptions (Vision, REALITY)
+- Support advanced JSON editor GUI for Xray-Core configuration 
 - Support advanced GUI for routing traffic (Reverse and Transparent proxy, Multi-Domain, Multi-Certificate, Multi-Port per inbound)
 - Support Multi-User per inbound
-- Support user traffic limitation, expiration date
-- Support System Status Monitoring
-- Support deep database search (inbounds and users)
+- Support applying traffic data limits and expiry dates per user/inbound
+- Support system status monitoring
+- Support deep database search
 - Show traffic statistics
 - Show online users
-- Show users with expirtion date or exceeded traffic limitation
-- Support advanced GUI for Xray Core configuration
+- Show users with expired date or exceeded traffic limits
 - Support subscription (multi) link
 - Support import/export database
 - Support One-Click SSL certificate application and automatic renewal
@@ -135,7 +134,20 @@ docker build -t x-ui .
 - Debian 10+
 - Fedora 36+
 
+## Screenshots
+
+![inbounds](./media/inbounds.png)
+![Dark inbounds](./media/inbounds-dark.png)
+![outbounds](./media/outbounds.png)
+![rules](./media/rules.png)
+
+
 ## API Routes
+
+<details>
+  <summary>Click for details</summary>
+
+### Usage
 
 - `/login` with `PUSH` user data: `{username: '', password: ''}` for login
 - `/xui/API/inbounds` base for following actions:
@@ -164,7 +176,14 @@ docker build -t x-ui .
 - `client.password` for Trojan
 - `client.email` for Shadowsocks
 
+</details>
+
 ## Environment Variables
+
+<details>
+  <summary>Click for details</summary>
+
+### Usage
 
 | Variable       |                      Type                      | Default       |
 | -------------- | :--------------------------------------------: | :------------ |
@@ -173,12 +192,7 @@ docker build -t x-ui .
 | XUI_BIN_FOLDER |                    `string`                    | `"bin"`       |
 | XUI_DB_FOLDER  |                    `string`                    | `"/etc/x-ui"` |
 
-## Screenshots
-
-![inbounds](./media/inbounds.png)
-![Dark inbounds](./media/inbounds-dark.png)
-![outbounds](./media/outbounds.png)
-![rules](./media/rules.png)
+</details>
 
 ## SSL Certificate
 
