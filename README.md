@@ -20,21 +20,21 @@
 
 
 ## Quick Look
-| Features                             |      Enable?       |
-| ------------------------------------ | :----------------: |
-| Multi-Protocol                       | :heavy_check_mark: |
-| Multi-Language                       | :heavy_check_mark: |
-| Multi-User Inbounds                  |:heavy_check_mark:  |
-|Advanced Traffic Routing              | :heavy_check_mark: |
-| REST API                             | :heavy_check_mark: |
-|Show Online Users                     | :heavy_check_mark: |
-| Manage Users Traffic Data & Expiry Date  | :heavy_check_mark: |
-| Apply Expiry Date based on First Usage   |     :heavy_check_mark: |
-| Telegram Bot (admin + clients)       | :heavy_check_mark: |
-| Database Backup using Telegram Bot   | :heavy_check_mark: |
-| Subscription Link + UserInfo         | :heavy_check_mark: |
-| Search in Deep                       | :heavy_check_mark: |
-| Dark/Light Theme                     | :heavy_check_mark: |
+| Features                               |      Enable?       |
+| -------------------------------------- | :----------------: |
+| Multi-Protocol                         | :heavy_check_mark: |
+| Multi-Language                         | :heavy_check_mark: |
+| Multi-User Inbounds                    | :heavy_check_mark: |
+| Advanced Traffic Routing               | :heavy_check_mark: |
+| REST API                               | :heavy_check_mark: |
+|Show Online Users                       | :heavy_check_mark: |
+| Manage Users Traffic Data & Expiry Date| :heavy_check_mark: |
+| Apply Expiry Date based on First Usage | :heavy_check_mark: |
+| Telegram Bot (admin + clients)         | :heavy_check_mark: |
+| Database Backup using Telegram Bot     | :heavy_check_mark: |
+| Subscription Link + UserInfo           | :heavy_check_mark: |
+| Search in Deep                         | :heavy_check_mark: |
+| Dark/Light Theme                       | :heavy_check_mark: |
 
   
 ## Install & Upgrade to Latest Version
@@ -311,8 +311,8 @@ Please be aware if you upgrade from an old X-UI version or other forks, by defau
 
 ## Acknowledgment
 
-- [Iran Hosted Domains](https://github.com/bootmortis/iran-hosted-domains) (License: **MIT**): _A comprehensive list of Iranian domains and services that are hosted within the country._
-- [PersianBlocker](https://github.com/MasterKia/PersianBlocker) (License: **AGPLv3**): _An optimal and extensive list to block ads and trackers on Persian websites._
+- [Loyalsoldier](https://github.com/Loyalsoldier/v2ray-rules-dat) (License: **GPL-3.0**): _The enhanced version of V2Ray routing rule._
+- [Iran v2ray rules](https://github.com/chocolate4u/Iran-v2ray-rules) (License: **GPL-3.0**): _Enhanced v2ray/xray and v2ray/xray-clients routing rules with built-in Iranian domains and a focus on security and adblocking._
 
 ## Stargazers over Time
 

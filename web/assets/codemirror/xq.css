@@ -30,10 +30,10 @@ THE SOFTWARE.
 .cm-s-xq span.cm-variable { color: black; }
 .cm-s-xq span.cm-variable-2 { color:black; }
 .cm-s-xq span.cm-variable-3, .cm-s-xq span.cm-type { color: black; }
-.cm-s-xq span.cm-property {}
+.cm-s-xq span.cm-property { color: #0e49b5; }
 .cm-s-xq span.cm-operator {}
 .cm-s-xq span.cm-comment { color: #bbbbbb; font-style: italic; }
-.cm-s-xq span.cm-string { color: #0e49b5; }
+.cm-s-xq span.cm-string {}
 .cm-s-xq span.cm-meta { color: yellow; }
 .cm-s-xq span.cm-qualifier { color: grey; }
 .cm-s-xq span.cm-builtin { color: #7EA656; }
@@ -63,10 +63,10 @@ THE SOFTWARE.
 .dark .cm-s-xq span.cm-variable { color: #FFF; }
 .dark .cm-s-xq span.cm-variable-2 { color: #EEE; }
 .dark .cm-s-xq span.cm-variable-3, .dark .cm-s-xq span.cm-type { color: #DDD; }
-.dark .cm-s-xq span.cm-property {}
+.dark .cm-s-xq span.cm-property { color: #f6c177 }
 .dark .cm-s-xq span.cm-operator {}
 .dark .cm-s-xq span.cm-comment { color: gray; }
-.dark .cm-s-xq span.cm-string { color: #f6c177 }
+.dark .cm-s-xq span.cm-string {}
 .dark .cm-s-xq span.cm-meta { color: yellow; }
 .dark .cm-s-xq span.cm-qualifier { color: #FFF700; }
 .dark .cm-s-xq span.cm-builtin { color: #30a; }

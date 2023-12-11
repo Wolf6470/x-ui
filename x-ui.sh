@@ -612,92 +612,41 @@ ssl_cert_issue_CF() {
     fi
 }
 
-update_geo_files() {
-echo -e "${green} ------------------------- "
-echo -e "${yellow} Advanced Geo System Updater Select Update Server "
-echo -e "${green}\t1.${plain} Github [Default] "
-echo -e "${green}\t2.${plain} jsDelivr CDN "
-echo -e "${green}\t0.${plain} Back To X-UI Menu "
-read -p "Select an option: " select
+update_geo() {
+    cd /usr/local/x-ui/bin
+    echo -e "${green}\t1.${plain} Update Geofiles [Recommended choice] "
+    echo -e "${green}\t2.${plain} Download from optional jsDelivr CDN "
+    echo -e "${green}\t0.${plain} Back To Main Menu "
+    read -p "Select: " select
 
-case "$select" in
-    0) show_menu ;;
-    1|2)
-        local="/usr/local/x-ui/bin"
-        source_mapping=()
+    case "$select" in
+        0)
+            show_menu
+            ;;
 
-        if [ "$select" -eq 1 ]; then
-            source_mapping=(
-                "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat geoip.dat"
-                "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat geosite.dat"
-                "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat geoip_IR.dat"
-                "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat geosite_IR.dat"
-                "https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat iran.dat"
-            )
-        elif [ "$select" -eq 2 ]; then
-            source_mapping=(
-                "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat geoip.dat"
-                "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat geosite.dat"
-                "https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release/geoip.dat geoip_IR.dat"
-                "https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release/geosite.dat geosite_IR.dat"
-                "https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat iran.dat"
-            )
-        fi
+        1)
+            wget -N "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget -N "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat" -O /tmp/wget && mv /tmp/wget geoip_IR.dat && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -O /tmp/wget && mv /tmp/wget geosite_IR.dat && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            echo -e "${green}Files are updated.${plain}"
+            confirm_restart
+            ;;
 
-        mkdir -p "$local" && chmod 764 "$local"
+        2)
+            wget -N "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat" && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget -N "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat" && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget "https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release/geoip.dat" -O /tmp/wget && mv /tmp/wget geoip_IR.dat && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            wget "https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release/geosite.dat" -O /tmp/wget && mv /tmp/wget geosite_IR.dat && echo -e "${green}Success${plain}\n" || echo -e "${red}Failure${plain}\n"
+            echo -e "${green}Files are updated.${plain}"
+            confirm_restart
+            ;;
 
-        updated_files=()
-
-        function needs_update() {
-            local source="$1"
-            local destination="$2"
-
-            [ ! -e "$destination" ] || [ "$(wget -q --spider --no-check-certificate --timestamping "$source" && stat -c %Y "$destination")" != "$(stat -c %Y "$destination")" ]
-        }
-
-        for pair in "${source_mapping[@]}"; do
-            output_file="${local}/$(echo "$pair" | cut -d ' ' -f 2)"
-
-            if needs_update "$(echo "$pair" | cut -d ' ' -f 1)" "$output_file"; then
-                echo "Downloading $output_file..."
-                wget -q --no-check-certificate --timestamping --show-progress -O "$output_file" "$(echo "$pair" | cut -d ' ' -f 1)"
-                chmod 644 "$output_file"
-                updated_files+=("$output_file")
-            else
-                echo "$output_file is already up to date. No need to update."
-            fi
-        done
-
-        echo -e "\n---------------------------"
-        echo -e "      Summary Report       "
-        echo -e "---------------------------"
-
-        if [ ${#updated_files[@]} -gt 0 ]; then
-            echo -e "Number of Downloaded files: ${#updated_files[@]}"
-            echo "Downloaded files:"
-            for file in "${updated_files[@]}"; do
-                echo "  - $file"
-            done
-        else
-            echo -e "\nNo files were updated."
-        fi
-
-        echo -e "---------------------------"
-        sleep 1
-        read -p "Do you want to restart x-ui? (y/n): " restart_choice
-        if [[ $restart_choice == [Yy] ]]; then
-            systemctl restart x-ui
-            echo "X-UI has been restarted."
-        else
-            echo "X-UI was not restarted."
-        fi
-        before_show_menu
-        ;;
-    *)
-        LOGE "Please enter the correct number [0-2]"
-        update_geo_files
-        ;;
-esac
+        *)
+            LOGE "Please enter a correct number [0-2]\n"
+            update_geo
+            ;;
+    esac
 }
 
 show_usage() {
@@ -746,7 +695,7 @@ show_menu() {
   ${green}15.${plain} 一A Key Installation BBR (latest kernel)
   ${green}16.${plain} 一SSL Certificate Management
   ${green}17.${plain} 一Cloudflare SSL Certificate
-  ${green}18.${plain} 一Advanced Geo Updater
+  ${green}18.${plain} 一Update Geo files
 ————————————————
  "
     show_status
@@ -808,7 +757,7 @@ show_menu() {
         ssl_cert_issue_CF
         ;;
     18)
-        update_geo_files
+        update_geo
         ;;
     *)
         LOGE "Please enter the correct number [0-18]"

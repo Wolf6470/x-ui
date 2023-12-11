@@ -3,7 +3,9 @@ WORKDIR /app
 ARG TARGETARCH 
 RUN apk --no-cache --update add build-base gcc wget unzip
 COPY . .
-RUN env CGO_ENABLED=1 go build -o build/x-ui main.go
+ENV CGO_ENABLED=1
+ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
+RUN go build -o build/x-ui main.go
 RUN ./DockerInitFiles.sh "$TARGETARCH"
 
 FROM alpine

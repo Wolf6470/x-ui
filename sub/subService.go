@@ -401,11 +401,6 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 					params["spx"] = spx
 				}
 			}
-			if serverName, ok := searchKey(realitySettings, "serverName"); ok {
-				if sname, ok := serverName.(string); ok && len(sname) > 0 {
-					address = sname
-				}
-			}
 		}
 
 		if streamNetwork == "tcp" && len(clients[clientIndex].Flow) > 0 {
@@ -581,11 +576,6 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			if spxValue, ok := searchKey(realitySettings, "spiderX"); ok {
 				if spx, ok := spxValue.(string); ok && len(spx) > 0 {
 					params["spx"] = spx
-				}
-			}
-			if serverName, ok := searchKey(realitySettings, "serverName"); ok {
-				if sname, ok := serverName.(string); ok && len(sname) > 0 {
-					address = sname
 				}
 			}
 		}

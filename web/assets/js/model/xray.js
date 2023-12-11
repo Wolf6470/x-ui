@@ -1563,7 +1563,7 @@ Inbound.VLESSSettings = class extends Inbound.Settings {
                 fallbacks=[],) {
         super(protocol);
         this.vlesses = vlesses;
-        this.decryption = 'none'; // Using decryption is not implemented here
+        this.decryption = decryption;
         this.fallbacks = fallbacks;
     }
 
@@ -1695,11 +1695,11 @@ Inbound.TrojanSettings = class extends Inbound.Settings {
         this.fallbacks = fallbacks;
     }
 
-    addTrojanFallback() {
+    addFallback() {
         this.fallbacks.push(new Inbound.TrojanSettings.Fallback());
     }
 
-    delTrojanFallback(index) {
+    delFallback(index) {
         this.fallbacks.splice(index, 1);
     }
 

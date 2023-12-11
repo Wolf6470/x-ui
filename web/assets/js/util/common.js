@@ -113,35 +113,35 @@ function usageColor(data, threshold, total) {
 function clientUsageColor(clientStats, trafficDiff) {
     switch (true) {
         case !clientStats || clientStats.total == 0:
-            return "#7a316f";
+            return "#7a316f"; // Purple
         case clientStats.up + clientStats.down < clientStats.total - trafficDiff:
-            return "#0e49b5";
+            return "#0e49b5"; // Blue
         case clientStats.up + clientStats.down < clientStats.total:
-            return "#ffa031";
+            return "#f37b24"; // Orange
         default:
-            return "#e04141";
+            return "#e04141"; // red
     }
 }
 
 function userExpiryColor(threshold, client, isDark = false) {
     if (!client.enable) {
-        return isDark ? '#2c3950' : '#bcbcbc';
+        return isDark ? '#2c3950' : '#bcbcbc';  // Gray
     }
     now = new Date().getTime(),
     expiry = client.expiryTime;
     switch (true) {
         case expiry === null:
-            return "#389e0d";
+            return "#7a316f"; // Purple
         case expiry < 0:
-            return "#0e49b5";
+            return "#0e49b5"; // Blue
         case expiry == 0:
-            return "#7a316f";
+            return "#7a316f"; // Purple
         case now < expiry - threshold:
-            return "#0e49b5";
+            return "#0e49b5"; // Blue
         case now < expiry:
-            return "#f37b24";
+            return "#f37b24"; // Orange
         default:
-            return "#e04141";
+            return "#e04141"; // red
     }
 }
 
