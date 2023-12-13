@@ -52,7 +52,7 @@
                         <span>{{ i18n "pages.inbounds.telegramDesc" }}</span>
                     </template>
                     Telegram ID
-                    <a-icon type="question-circle" theme="filled"></a-icon>
+                    <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
             <a-input v-model.trim="clientsBulkModal.tgId"></a-input>
@@ -64,7 +64,7 @@
                         0 <span>{{ i18n "pages.inbounds.meansNoLimit" }}</span>
                     </template>
                     {{ i18n "pages.inbounds.totalFlow" }} (GB)
-                    <a-icon type="question-circle" theme="filled"></a-icon>
+                    <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
             <a-input-number v-model="clientsBulkModal.totalGB" :min="0"></a-input-number>
@@ -82,7 +82,7 @@
                         <span>{{ i18n "pages.inbounds.leaveBlankToNeverExpire" }}</span>
                     </template>
                     {{ i18n "pages.inbounds.expireDate" }}
-                    <a-icon type="question-circle" theme="filled"></a-icon>
+                    <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
             <a-date-picker :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
@@ -96,7 +96,7 @@
                     <template slot="title">
                         <span>{{ i18n "pages.client.renewDesc" }}</span>
                     </template>
-                    <a-icon type="question-circle" theme="filled"></a-icon>
+                    <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
             <a-input-number v-model.number="clientsBulkModal.reset" :min="0"></a-input-number>
