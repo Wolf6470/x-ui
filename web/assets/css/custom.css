@@ -55,7 +55,7 @@ style attribute {
 }
 .ant-table-tbody > tr > td,
 .ant-table-thead > tr > th {
-    padding: 12px 16px;
+    padding: 12px 8px;
     overflow-wrap: break-word;
 }
 .ant-table-thead > tr > th {
@@ -131,6 +131,13 @@ style attribute {
     .ant-tabs {
         margin: 0.5rem;
         padding: 0.5rem;
+    }
+    .ant-modal-body {
+        padding: 10px;
+    }
+    .ant-form-item-label {
+        line-height: 1.5;
+        padding: 8px 0 0;
     }
 }
 
@@ -407,6 +414,10 @@ style attribute {
 
 .ant-tabs {
     background-color: white;
+}
+
+.ant-form-item {
+    margin-bottom: 0;
 }
 
 .ant-setting-textarea {

@@ -7,15 +7,20 @@
     width="600px"
     :class="themeSwitcher.currentTheme"
     >
-    <table style="margin-bottom: 10px; width: 100%;">
-        <tr><td>
+    <a-row>
+        <a-col :xs="24" :md="12">
             <table>
                 <tr><td>{{ i18n "protocol" }}</td><td><a-tag color="purple">[[ dbInbound.protocol ]]</a-tag></td></tr>
-                <tr><td>{{ i18n "pages.inbounds.address" }}</td><td><a-tag>[[ dbInbound.address ]]</a-tag></td></tr>
+                <tr><td>{{ i18n "pages.inbounds.address" }}</td><td>
+                    <a-tooltip :title="[[ dbInbound.address ]]">
+                        <a-tag class="info-large-tag">[[ dbInbound.address ]]</a-tag>
+                    </a-tooltip>
+                </td></tr>
                 <tr><td>{{ i18n "pages.inbounds.port" }}</td><td><a-tag>[[ dbInbound.port ]]</a-tag></td></tr>
             </table>
-        </td>
-        <td v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
+        </a-col>
+        <a-col :xs="24" :md="12">
+        <template v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
             <table>
                 <tr>
                     <td>{{ i18n "transmission" }}</td><td><a-tag color="blue">[[ inbound.network ]]</a-tag></td>
@@ -23,12 +28,19 @@
             <template v-if="inbound.isTcp || inbound.isWs || inbound.isH2">
                 <tr>
                     <td>{{ i18n "host" }}</td>
-                    <td v-if="inbound.host"><a-tag>[[ inbound.host ]]</a-tag></td>
+                    <td v-if="inbound.host">
+                        <a-tooltip :title="[[ inbound.host ]]">
+                            <a-tag class="info-large-tag">[[ inbound.host ]]</a-tag>
+                        </a-tooltip>
+                    </td>
                     <td v-else><a-tag color="orange">{{ i18n "none" }}</a-tag></td></tr>
                 </tr>
                 <tr>
                     <td>{{ i18n "path" }}</td>
-                    <td v-if="inbound.path"><a-tag>[[ inbound.path ]]</a-tag></td>
+                    <td v-if="inbound.path">
+                        <a-tooltip :title="[[ inbound.path ]]">
+                            <a-tag class="info-large-tag">[[ inbound.path ]]</a-tag>
+                        </a-tooltip>
                     <td v-else><a-tag color="orange">{{ i18n "none" }}</a-tag></td>
                 </tr>
             </template>
@@ -45,30 +57,35 @@
             </template>
             
             <template v-if="inbound.isGrpc">
-                <tr><td>grpc serviceName</td><td><a-tag>[[ inbound.serviceName ]]</a-tag></td></tr>
+                <tr><td>grpc serviceName</td><td>
+                    <a-tooltip :title="[[ inbound.serviceName ]]">
+                        <a-tag class="info-large-tag">[[ inbound.serviceName ]]</a-tag>
+                    </a-tooltip>
                 <tr><td>grpc multiMode</td><td><a-tag>[[ inbound.stream.grpc.multiMode ]]</a-tag></td></tr>
             </template>
             </table>
-        </td></tr>
-        <tr colspan="2" v-if="dbInbound.hasLink()">
-            <td>
-                {{ i18n "security" }}
-                <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[ inbound.stream.security ]]</a-tag>
-                <br />
-                <template v-if="inbound.stream.security != 'none'">
-                {{ i18n "domainName" }}
-                <a-tag :color="inbound.serverName ? 'green' : 'orange'">[[ inbound.serverName ? inbound.serverName : '' ]]</a-tag>
-                </template>
-            </td>
-        </tr>
-    </table>
+        </template>
+        </a-col>
+        <template v-if="dbInbound.hasLink()">
+            {{ i18n "security" }}
+            <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[ inbound.stream.security ]]</a-tag>
+            <br />
+            <template v-if="inbound.stream.security != 'none'">
+            {{ i18n "domainName" }}
+            <a-tag :color="inbound.serverName ? 'green' : 'orange'">[[ inbound.serverName ? inbound.serverName : '' ]]</a-tag>
+            </template>
+        </template>
     <table v-if="dbInbound.isSS" style="margin-bottom: 10px; width: 100%;">
         <tr>
             <td>{{ i18n "encryption" }}</td>
             <td><a-tag color="blue">[[ inbound.settings.method ]]</a-tag></td>
         </tr><tr v-if="inbound.isSS2022">
             <td>{{ i18n "password" }}</td>
-            <td><a-tag>[[ inbound.settings.password ]]</a-tag></td>
+            <td>
+                <a-tooltip :title="[[ inbound.settings.password  ]]">
+                    <a-tag class="info-large-tag">[[ inbound.settings.password  ]]</a-tag>
+                </a-tooltip>
+            </td>
         </tr><tr>
             <td>{{ i18n "pages.inbounds.network" }}</td>
             <td><a-tag color="blue">[[ inbound.settings.network ]]</a-tag></td>
@@ -90,8 +107,12 @@
                 <td><a-tag>[[ infoModal.clientSettings.flow ]]</a-tag></td>
             </tr>
             <tr v-if="infoModal.clientSettings.password">
-                <td>Password</td>
-                <td><a-tag>[[ infoModal.clientSettings.password ]]</a-tag></td>
+                <td>{{ i18n "password" }}</td>
+                <td>
+                    <a-tooltip :title="[[ infoModal.clientSettings.password  ]]">
+                        <a-tag class="info-large-tag">[[ infoModal.clientSettings.password  ]]</a-tag>
+                    </a-tooltip>
+                </td>
             </tr>
             <tr>
                 <td>{{ i18n "status" }}</td>
@@ -141,8 +162,8 @@
         <template v-if="app.subSettings.enable && infoModal.clientSettings.subId">
             <a-divider>Subscription link</a-divider>
             <a-row>
-                <a-col :span="22"><a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a></a-col>
-                <a-col :span="2">
+                <a-col :sx="24" :md="22"><a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a></a-col>
+                <a-col :sx="24" :md="2" style="text-align: right;">
                     <a-tooltip title='{{ i18n "copy" }}'>
                         <button class="ant-btn ant-btn-primary" id="copy-sub-link" @click="copyToClipboard('copy-sub-link', infoModal.subLink)">
                             <a-icon type="snippets"></a-icon>
@@ -154,8 +175,8 @@
         <template v-if="app.tgBotEnable && infoModal.clientSettings.tgId">
             <a-divider>Telegram ID</a-divider>
             <a-row>
-                <a-col :span="22"><a :href="[[ infoModal.tgLink ]]" target="_blank">@[[ infoModal.clientSettings.tgId ]]</a></a-col>
-                <a-col :span="2">
+                <a-col :sx="24" :md="22"><a :href="[[ infoModal.tgLink ]]" target="_blank">@[[ infoModal.clientSettings.tgId ]]</a></a-col>
+                <a-col :sx="24" :md="2" style="text-align: right;">
                     <a-tooltip title='{{ i18n "copy" }}'>
                         <button class="ant-btn ant-btn-primary" id="copy-tg-link" @click="copyToClipboard('copy-tg-link', '@' + infoModal.clientSettings.tgId)">
                             <a-icon type="snippets"></a-icon>
@@ -167,8 +188,8 @@
         <template v-if="dbInbound.hasLink()">
             <a-divider>URL</a-divider>
             <a-row v-for="(link,index) in infoModal.links">
-                <a-col :span="22"><a-tag color="blue">[[ link.remark ]]</a-tag><br />[[ link.link ]]</a-col>
-                <a-col :span="2" style="text-align: right;">
+                <a-col :sx="24" :md="22"><a-tag color="blue">[[ link.remark ]]</a-tag><br />[[ link.link ]]</a-col>
+                <a-col :sx="24" :md="2" style="text-align: right;">
                     <a-tooltip title='{{ i18n "copy" }}'>
                         <button class="ant-btn ant-btn-primary" :id="'copy-url-link-'+index" @click="copyToClipboard('copy-url-link-'+index, link.link)">
                             <a-icon type="snippets"></a-icon>

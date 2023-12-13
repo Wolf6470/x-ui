@@ -653,18 +653,18 @@ show_usage() {
     echo "X-UI Control Menu Usage"
     echo "------------------------------------------"
     echo "SUBCOMMANDS:" 
-    echo "x-ui              - Admin management script"
-    echo "x-ui start        - Start X-UI"
-    echo "x-ui stop         - Stop X-UI"
-    echo "x-ui restart      - Restart X-UI"
-    echo "x-ui status       - Current X-UI status"
-    echo "x-ui enable       - Enable X-UI on system startup"
-    echo "x-ui disable      - Disable X-UI on system startup"
-    echo "x-ui log          - Check X-UI logs"
-    echo "x-ui update       - Update X-UI"
-    echo "x-ui install      - Install X-UI"
-    echo "x-ui uninstall    - Uninstall X-UI"
-    echo "x-ui help         - Control menu usage"
+    echo "x-ui              - Admin Management Script"
+    echo "x-ui start        - Start"
+    echo "x-ui stop         - Stop"
+    echo "x-ui restart      - Restart"
+    echo "x-ui status       - Current Status"
+    echo "x-ui enable       - Enable Autostart on OS Startup"
+    echo "x-ui disable      - Disable Autostart on OS Startup"
+    echo "x-ui log          - Check Logs"
+    echo "x-ui update       - Update"
+    echo "x-ui install      - Install"
+    echo "x-ui uninstall    - Uninstall"
+    echo "x-ui help         - Control Menu Usage"
     echo "------------------------------------------"
 }
 
@@ -674,28 +674,28 @@ show_menu() {
 ————————————————
   ${green}0.${plain} Exit 
 ————————————————
-  ${green}1.${plain} Install X-UI
-  ${green}2.${plain} Update X-UI
-  ${green}3.${plain} Uninstall X-UI
+  ${green}1.${plain} Install
+  ${green}2.${plain} Update
+  ${green}3.${plain} Uninstall
 ————————————————
   ${green}4.${plain} Reset Username and Password
   ${green}5.${plain} Reset Panel Settings
   ${green}6.${plain} Set Panel Port
-  ${green}7.${plain} View Current Panel Settings
+  ${green}7.${plain} View Panel Settings
 ————————————————
-  ${green}8.${plain} Start X-UI
-  ${green}9.${plain} Stop X-UI
-  ${green}10.${plain} Restart X-UI
-  ${green}11.${plain} Check X-UI State
-  ${green}12.${plain} Check X-UI Logs
+  ${green}8.${plain} Start
+  ${green}9.${plain} Stop
+  ${green}10.${plain} Restart
+  ${green}11.${plain} Check State
+  ${green}12.${plain} Check Logs
 ————————————————
-  ${green}13.${plain} Set X-UI Autostart
-  ${green}14.${plain} Cancel X-UI Autostart
+  ${green}13.${plain} Enable Autostart
+  ${green}14.${plain} Disable Autostart
 ————————————————
   ${green}15.${plain} 一A Key Installation BBR (latest kernel)
   ${green}16.${plain} 一SSL Certificate Management
   ${green}17.${plain} 一Cloudflare SSL Certificate
-  ${green}18.${plain} 一Update Geo files
+  ${green}18.${plain} 一Update Geo Files
 ————————————————
  "
     show_status
