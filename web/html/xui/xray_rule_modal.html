@@ -32,7 +32,7 @@
         </a-form-item>
         <a-form-item label='Network'>
             <a-select v-model="ruleModal.rule.network" :dropdown-class-name="themeSwitcher.currentTheme">
-                <a-select-option v-for="x in ['','tcp','tdp','tcp,udp']" :value="x">[[ x ]]</a-select-option>
+                <a-select-option v-for="x in ['','tcp','udp','tcp,udp']" :value="x">[[ x ]]</a-select-option>
             </a-select>
         </a-form-item>
         <a-form-item label='Protocol'>
@@ -74,6 +74,17 @@
                 </a-tooltip>
             </template>
             <a-input v-model.trim="ruleModal.rule.domain"></a-input>
+        </a-form-item>
+        <a-form-item>
+            <template slot="label">
+                <a-tooltip>
+                    <template slot="title">
+                        <span>{{ i18n "pages.xray.rules.useComma" }}</span>
+                    </template>
+                    User <a-icon type="question-circle"></a-icon>
+                </a-tooltip>
+            </template>
+            <a-input v-model.trim="ruleModal.rule.user"></a-input>
         </a-form-item>
         <a-form-item>
             <template slot="label">

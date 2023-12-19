@@ -140,7 +140,7 @@
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
                             {{ i18n "usage"}}:
-                            Memory: [[ sizeFormat(status.appStats.mem) ]] -
+                            RAM: [[ sizeFormat(status.appStats.mem) ]] -
                             Threads: [[ status.appStats.threads ]]
                             </a-tooltip>
                         </a-card>
@@ -195,7 +195,7 @@
                             <a-row>
                                 <a-col :span="12">
                                     <a-icon type="arrow-up"></a-icon>
-                                    [[ sizeFormat(status.netIO.up) ]] / S
+                                    [[ sizeFormat(status.netIO.up) ]]/s
                                     <a-tooltip>
                                         <template slot="title">
                                             {{ i18n "pages.index.upSpeed" }}
@@ -205,7 +205,7 @@
                                 </a-col>
                                 <a-col :span="12">
                                     <a-icon type="arrow-down"></a-icon>
-                                    [[ sizeFormat(status.netIO.down) ]] / S
+                                    [[ sizeFormat(status.netIO.down) ]]/s
                                     <a-tooltip>
                                         <template slot="title">
                                             {{ i18n "pages.index.downSpeed" }}
@@ -251,8 +251,10 @@
              :closable="true" @ok="() => versionModal.visible = false"
              :class="themeSwitcher.currentTheme"
              footer="">
-        <h2>{{ i18n "pages.index.xraySwitchClick"}}</h2>
-        <h2>{{ i18n "pages.index.xraySwitchClickDesk"}}</h2>
+        <a-alert type="warning" style="margin-bottom: 12px; width: fit-content"
+        message='{{ i18n "pages.index.xraySwitchClickDesk" }}'
+        show-icon
+        ></a-alert>
         <template v-for="version, index in versionModal.versions">
             <a-tag :color="index % 2 == 0 ? 'purple' : 'blue'"
                    style="margin: 10px" @click="switchV2rayVersion(version)">
