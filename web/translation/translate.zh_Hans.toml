@@ -32,7 +32,7 @@
 "transmission" = "传输"
 "host" = "主持人"
 "path" = "小路"
-"camouflage" = "伪装"
+"camouflage" = "混淆"
 "status" = "状态"
 "enabled" = "开启"
 "disabled" = "关闭"
@@ -63,7 +63,7 @@
 "link" = "管理"
 
 [pages.login]
-"title" = "登录"
+"title" = "欢迎"
 "loginAgain" = "登录时效已过，请重新登录"
 
 [pages.login.toasts]
@@ -100,8 +100,8 @@
 "backup" = "备份"
 "backupTitle" = "备份数据库"
 "backupDescription" = "请记住在导入新数据库之前进行备份"
-"exportDatabase" = "下载数据库"
-"importDatabase" = "上传数据库"
+"exportDatabase" = "备份"
+"importDatabase" = "恢复"
 
 [pages.inbounds]
 "title" = "入站列表"
@@ -167,7 +167,7 @@
 "emailDesc" = "电子邮件必须完全唯"
 "setDefaultCert" = "从面板设置证书"
 "telegramDesc" = "使用 Telegram ID，不包含 @ 符号或聊天 ID（可以在 @userinfobot 处获取，或在机器人中使用'/id'命令）"
-"subscriptionDesc" = "您可以在详细信息上找到您的子链接，也可以对多个配置使用相同的名称"
+"subscriptionDesc" = "您可以在详细信息上找到您的子链接，你可以为多个客户端使用相同的名称"
 "info" = "信息"
 "same" = "相同"
 "inboundData" = "入站数据"
@@ -188,10 +188,10 @@
 "prefix" = "前缀"
 "postfix" = "后缀"
 "delayedStart" = "首次使用后开始"
-"expireDays" = "过期天数"
+"expireDays" = "期间"
 "days" = "天"
 "renew" = "自动续订"
-"renewDesc" = "过期后自动续订。0 = 禁用"
+"renewDesc" = "到期后自动续订。(0 = 禁用)(单元: 天)"
 
 [pages.inbounds.toasts]
 "obtain" = "获取"
@@ -312,6 +312,8 @@
 "directCountryConfigsDesc" = "这些选项会将用户直接连接到特定国家/地区的域。"
 "ipv4Configs" = "IPv4 配置"
 "ipv4ConfigsDesc" = "此选项将仅通过 IPv4 路由到目标域"
+"warpConfigs" = "WARP 配置"
+"warpConfigsDesc" = "WARP 将通过 Cloudflare 服务器将流量路由到网站。"
 "Template" = "Xray 配置模板"
 "TemplateDesc" = "以该模型为基础生成最终的Xray配置文件，重新启动面板生成效率"
 "FreedomStrategy" = "配置自由协议的策略"
@@ -354,6 +356,14 @@
 "GoogleIPv4Desc" = "添加谷歌连接IPv4的路由"
 "NetflixIPv4" = "为 Netflix 使用 IPv4"
 "NetflixIPv4Desc" = "添加Netflix连接IPv4的路由"
+"GoogleWARP" = "将谷歌路由到 WARP"
+"GoogleWARPDesc" = "为谷歌添加路由到WARP"
+"OpenAIWARP" = "将 OpenAI (ChatGPT) 路由到 WARP"
+"OpenAIWARPDesc" = "将OpenAI（ChatGPT）路由添加到WARP"
+"NetflixWARP" = "将 Netflix 路由到 WARP"
+"NetflixWARPDesc" = "为Netflix添加路由到WARP"
+"SpotifyWARP" = "将 Spotify 路由到 WARP"
+"SpotifyWARPDesc" = "为Spotify添加路由到WARP"
 "completeTemplate" = "全部"
 "Inbounds" = "界内"
 "Outbounds" = "出站"
@@ -388,6 +398,14 @@
 "bridge" = "桥"
 "portal" = "门户"
 "intercon" = "互连"
+
+[pages.xray.wireguard]
+"secretKey" = "密钥"
+"publicKey" = "公钥"
+"allowedIPs" = "允许的 IP"
+"endpoint" = "终点"
+"psk" = "共享密钥"
+"domainStrategy" = "域策略"
 
 [tgbot]
 "noResult" = "❗ 没有结果！"

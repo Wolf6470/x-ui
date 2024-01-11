@@ -44,7 +44,7 @@
                                         <a-progress type="dashboard" status="normal"
                                                     :stroke-color="status.cpu.color"
                                                     :percent="status.cpu.percent"></a-progress>
-                                        <div>CPU: ([[ status.cpuCount ]]core)</div>
+                                            <div>CPU:  [[ cpuCoreFormat(status.cpuCount) ]]</div>
                                     </a-col>
                                     <a-col :span="12" style="text-align: center">
                                         <a-progress type="dashboard" status="normal"
@@ -83,9 +83,9 @@
             <transition name="list" appear>
                 <a-row>
                     <a-col :sm="24" :md="12">
-                        <a-card hoverable>
-                            X-UI: <a href="https://github.com/alireza0/x-ui/releases" target="_blank"><a-tag color="blue">{{ .cur_ver }}</a-tag></a>
-                            Xray:
+                        <a-card hoverable> 
+                            X-UI <a href="https://github.com/alireza0/x-ui/releases" target="_blank"><a-tag color="blue">{{ .cur_ver }}</a-tag></a>
+                            Xray
                             <a-tooltip title='{{ i18n "pages.index.xraySwitch" }}'>
                                 <a-tag color="blue" style="cursor: pointer;" @click="openSelectV2rayVersion">[[ status.xray.version ]]</a-tag>
                             </a-tooltip>
@@ -112,7 +112,7 @@
                             <a-tag :color="status.xray.color">[[ status.xray.state ]]</a-tag>
                             <a-popover v-if="status.xray.state === State.Error"
                                 :overlay-class-name="themeSwitcher.currentTheme">
-                                <span slot="title" style="font-size: 12pt">Error in running xray-core
+                                <span slot="title" style="font-size: 12pt">An error occurred while running Xray
                                     <a-tag color="purple" style="cursor: pointer; float: right;" @click="openLogs()">{{ i18n "pages.index.logs" }}</a-tag>
                                 </span>
                                 <template slot="content">

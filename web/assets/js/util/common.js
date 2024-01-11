@@ -20,6 +20,14 @@ function sizeFormat(size) {
     }
 }
 
+function cpuCoreFormat(cores) {
+    if (cores === 1) {
+        return "1 Core";
+    } else {
+        return cores + " Cores";
+    }
+}
+
 function base64(str) {
     return Base64.encode(str);
 }

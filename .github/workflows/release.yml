@@ -1,4 +1,5 @@
-name: Release X-ui
+name: Release X-UI
+
 on:
   push:
     tags:
@@ -6,127 +7,81 @@ on:
   workflow_dispatch:
 
 jobs:
-  linuxamd64build:
-    name: build x-ui amd64 version
+  build:
+    strategy:
+      matrix:
+        platform: [amd64, arm64, arm]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v5.0.0
         with:
           go-version: '1.21'
-      - name: build linux amd64 version
-        run: |
-          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o xui-release -v main.go
-          mkdir x-ui
-          cp xui-release x-ui/xui-release
-          cp x-ui.service x-ui/x-ui.service
-          cp x-ui.sh x-ui/x-ui.sh
-          cd x-ui
-          mv xui-release x-ui
-          mkdir bin
-          cd bin
-          wget https://github.com/XTLS/Xray-core/releases/download/v1.8.6/Xray-linux-64.zip
-          unzip Xray-linux-64.zip
-          rm -f Xray-linux-64.zip geoip.dat geosite.dat LICENSE README.md
-          wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-          wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-          wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-          wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-          mv xray xray-linux-amd64
-          cd ..
-          cd ..
-      - name: package
-        run: tar -zcvf x-ui-linux-amd64.tar.gz x-ui
-      - name: upload
-        uses: svenstaro/upload-release-action@2.7.0
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          file: x-ui-linux-amd64.tar.gz
-          asset_name: x-ui-linux-amd64.tar.gz
-          prerelease: true
-  linuxarm64build:
-    name: build x-ui arm64 version
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      - name: build linux arm64 version
+          
+      - name: Install dependencies for arm64 and arm
+        if: matrix.platform == 'arm64' || matrix.platform == 'arm'
         run: |
           sudo apt-get update
           sudo apt install gcc-aarch64-linux-gnu
-          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc go build -o xui-release -v main.go
-          mkdir x-ui
-          cp xui-release x-ui/xui-release
-          cp x-ui.service x-ui/x-ui.service
-          cp x-ui.sh x-ui/x-ui.sh
-          cd x-ui
-          mv xui-release x-ui
-          mkdir bin
-          cd bin
-          wget https://github.com/xtls/xray-core/releases/download/v1.8.6/Xray-linux-arm64-v8a.zip
-          unzip Xray-linux-arm64-v8a.zip
-          rm -f Xray-linux-arm64-v8a.zip geoip.dat geosite.dat LICENSE README.md
-          wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-          wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-          wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-          wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-          mv xray xray-linux-arm64
-          cd ..
-          cd ..
-      - name: package
-        run: tar -zcvf x-ui-linux-arm64.tar.gz x-ui
-      - name: upload
-        uses: svenstaro/upload-release-action@2.7.0
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          file: x-ui-linux-arm64.tar.gz
-          asset_name: x-ui-linux-arm64.tar.gz
-          prerelease: true
-  linuxs390xbuild:
-    name: build x-ui s390x version
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      - name: build linux s390x version
+          if [ "${{ matrix.platform }}" == "arm" ]; then
+            sudo apt install gcc-arm-linux-gnueabihf
+          fi
+
+      - name: Build x-ui
         run: |
-          sudo apt-get update
-          sudo apt install gcc-s390x-linux-gnu -y
-          CGO_ENABLED=1 GOOS=linux GOARCH=s390x CC=s390x-linux-gnu-gcc go build -o xui-release -v main.go
+          export CGO_ENABLED=1
+          export GOOS=linux
+          export GOARCH=${{ matrix.platform }}
+          if [ "${{ matrix.platform }}" == "arm64" ]; then
+            export CC=aarch64-linux-gnu-gcc
+          elif [ "${{ matrix.platform }}" == "arm" ]; then
+            export CC=arm-linux-gnueabihf-gcc
+          fi
+          go build -o xui-release -v main.go
+          
           mkdir x-ui
-          cp xui-release x-ui/xui-release
-          cp x-ui.service x-ui/x-ui.service
-          cp x-ui.sh x-ui/x-ui.sh
-          cd x-ui
-          mv xui-release x-ui
-          mkdir bin
-          cd bin
-          wget https://github.com/xtls/xray-core/releases/download/v1.8.6/Xray-linux-s390x.zip
-          unzip Xray-linux-s390x.zip
-          rm -f Xray-linux-s390x.zip geoip.dat geosite.dat LICENSE README.md
+          cp xui-release x-ui/
+          cp x-ui.service x-ui/
+          cp x-ui.sh x-ui/
+          mv x-ui/xui-release x-ui/x-ui
+          mkdir x-ui/bin
+          cd x-ui/bin
+          
+          # Download dependencies
+          Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v1.8.7/"
+          if [ "${{ matrix.platform }}" == "amd64" ]; then
+            wget ${Xray_URL}Xray-linux-64.zip
+            unzip Xray-linux-64.zip
+            rm -f Xray-linux-64.zip
+          elif [ "${{ matrix.platform }}" == "arm64" ]; then
+            wget ${Xray_URL}Xray-linux-arm64-v8a.zip
+            unzip Xray-linux-arm64-v8a.zip
+            rm -f Xray-linux-arm64-v8a.zip
+          else
+            wget ${Xray_URL}Xray-linux-arm32-v7a.zip
+            unzip Xray-linux-arm32-v7a.zip
+            rm -f Xray-linux-arm32-v7a.zip
+          fi
+          rm -f geoip.dat geosite.dat geoip_IR.dat geosite_IR.dat
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
           wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
           wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-          mv xray xray-linux-s390x
-          cd ..
-          cd ..
-      - name: package
-        run: tar -zcvf x-ui-linux-s390x.tar.gz x-ui
-      - name: upload
+          mv xray xray-linux-${{ matrix.platform }}
+          cd ../..
+          
+      - name: Package
+        run: tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+        
+      - name: Upload
         uses: svenstaro/upload-release-action@2.7.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-linux-s390x.tar.gz
-          asset_name: x-ui-linux-s390x.tar.gz
+          file: x-ui-linux-${{ matrix.platform }}.tar.gz
+          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
           prerelease: true
+          overwrite: true

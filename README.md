@@ -11,8 +11,8 @@
 
 **If you think this project is helpful to you, you may wish to give a**:star2:
 
-
-<img width="120" alt="image" src="https://github.com/shahin-io/x-ui/assets/115543613/35d97be6-cc51-44a3-ae48-3b740928bd06">
+<img width="125" alt="image"
+src="https://github.com/alireza0/x-ui/assets/115543613/dd4f10dd-8bb0-40cf-846f-1fe1de7a6275">
 
 - USDT (TRC20): `TYTq73Gj6dJ67qe58JVPD9zpjW2cc9XgVz`
 - Tezos (XTZ):
@@ -29,7 +29,7 @@
 | Client & Traffic & System Status       | :heavy_check_mark: |
 | Date & Traffic Cap Based on First Use  | :heavy_check_mark: |
 | REST API                               | :heavy_check_mark: |
-| TG Bot (DB backup + admin + client)     | :heavy_check_mark: |
+| TG Bot (DB backup + admin + client)    | :heavy_check_mark: |
 | Subscription Service (link + info)     | :heavy_check_mark: |
 | Search in Deep                         | :heavy_check_mark: |
 | Dark/Light Theme                       | :heavy_check_mark: |
@@ -108,7 +108,7 @@ docker run -itd \
 > Build your own image
 
 ```shell
-docker build -t x-ui
+docker build -t x-ui .
 ```
 
 </details>
@@ -123,9 +123,10 @@ docker build -t x-ui
 
 ## Features
 
-- Supports protocols including VLESS, VMess, Trojan, Shadowsocks, Dokodemo-door, SOCKS, HTTP
+- Supports protocols including VLESS, VMess, Trojan, Shadowsocks, Dokodemo-door, SOCKS, HTTP, Wireguard
 - Supports XTLS protocols, including Vision and REALITY
 - An advanced interface for routing traffic, incorporating PROXY Protocol, Reverse, External, and Transparent Proxy, along with Multi-Domain, SSL Certificate, and Port
+- Support auto generate Cloudflare WARP using Wireguard outbound
 - An interactive JSON interface for Xray template configuration
 - An advanced interface for inbound and outbound configuration
 - Clients’ traffic cap and expiration date based on first use
@@ -151,6 +152,7 @@ docker build -t x-ui
 ![Dark inbounds](./media/inbounds-dark.png)
 ![outbounds](./media/outbounds.png)
 ![rules](./media/rules.png)
+![warp](./media/warp.png)
 
 
 ## API Routes

@@ -134,40 +134,22 @@
                             </a-list>
                         </a-tab-pane>
                         <a-tab-pane key="2" tab='{{ i18n "pages.settings.userSettings"}}'>
-                            <a-form style="padding: 20px;" layout="inline">
-                                    <a-row>
-                                        <a-col :xs="24" :md="8" style="margin-top: 8px;">{{ i18n "pages.settings.oldUsername"}}:</a-col>
-                                        <a-col :xs="24" :md="8">
-                                            <a-form-item>
-                                                <a-input v-model="user.oldUsername" style="width: 200px"></a-input>
-                                            </a-form-item>
-                                        </a-col>
-                                    </a-row>
-                                    <a-row>
-                                        <a-col :xs="24" :md="8" style="margin-top: 8px;">{{ i18n "pages.settings.currentPassword"}}:</a-col>
-                                        <a-col :xs="24" :md="8">
-                                            <a-form-item>
-                                                <password-input v-model="user.oldPassword" style="width: 200px"></password-input>
-                                            </a-form-item>
-                                        </a-col>
-                                    </a-row>
-                                    <a-row>
-                                        <a-col :xs="24" :md="8" style="margin-top: 8px;">{{ i18n "pages.settings.newUsername"}}:</a-col>
-                                        <a-col :xs="24" :md="8">
-                                            <a-form-item>
-                                                <a-input v-model="user.newUsername" style="width: 200px"></a-input>
-                                            </a-form-item>
-                                        </a-col>
-                                    </a-row>
-                                    <a-row>
-                                        <a-col :xs="24" :md="8" style="margin-top: 8px;">{{ i18n "pages.settings.newPassword"}}:</a-col>
-                                        <a-col :xs="24" :md="8">
-                                            <a-form-item>
-                                                <password-input v-model="user.newPassword" style="width: 200px"></password-input>
-                                            </a-form-item>            
-                                        </a-col>
-                                    </a-row>
-                                <a-button type="primary" @click="updateUser">{{ i18n "confirm" }}</a-button>
+                            <a-form  layout="horizontal" :colon="false" style="float: left; margin: 10px 0;" :label-col="{ md: {span:10} }" :wrapper-col="{ md: {span:14} }">
+                                <a-form-item label='{{ i18n "pages.settings.oldUsername"}}'>
+                                    <a-input v-model="user.oldUsername"></a-input>
+                                </a-form-item>
+                                <a-form-item label='{{ i18n "pages.settings.currentPassword"}}'>
+                                    <password-input v-model="user.oldPassword"></password-input>
+                                </a-form-item>
+                                <a-form-item label='{{ i18n "pages.settings.newUsername"}}'>
+                                    <a-input v-model="user.newUsername"></a-input>
+                                </a-form-item>
+                                <a-form-item label='{{ i18n "pages.settings.newPassword"}}'>
+                                    <password-input v-model="user.newPassword"></password-input>
+                                </a-form-item>
+                                <a-form-item label=" ">
+                                    <a-button type="primary" @click="updateUser">{{ i18n "confirm" }}</a-button>
+                                </a-form-item>
                             </a-form>
                         </a-tab-pane>
                         <a-tab-pane key="3" tab='{{ i18n "pages.settings.TGBotSettings"}}'>

@@ -37,7 +37,7 @@
                 <template slot="title">
                     0 <span>{{ i18n "pages.inbounds.meansNoLimit" }}</span>
                 </template>
-                {{ i18n "pages.inbounds.totalFlow" }}(GB)
+                {{ i18n "pages.inbounds.totalFlow" }} (GB)
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
@@ -93,6 +93,11 @@
 <!-- http -->
 <template v-if="inbound.protocol === Protocols.HTTP">
     {{template "form/http"}}
+</template>
+
+<!-- wireguard -->
+<template v-if="inbound.protocol === Protocols.WIREGUARD">
+    {{template "form/wireguard"}}
 </template>
 
 <!-- stream settings -->

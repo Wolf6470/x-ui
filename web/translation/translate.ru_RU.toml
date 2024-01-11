@@ -32,7 +32,7 @@
 "transmission" = "Протокол передачи"
 "host" = "Хост"
 "path" = "Путь"
-"camouflage" = "Маскировка"
+"camouflage" = "Затемнение"
 "status" = "Статус"
 "enabled" = "Включено"
 "disabled" = "Отключено"
@@ -60,10 +60,10 @@
 "settings" = "Настройки"
 "xray" = "Xray Настройки"
 "logout" = "Выйти"
-"link" = "менеджмент"
+"link" = "Менеджмент"
 
 [pages.login]
-"title" = "Войти"
+"title" = "Добро пожаловать"
 "loginAgain" = "Время сессии истекло. Пожалуйста, войдите в систему снова"
 
 [pages.login.toasts]
@@ -167,7 +167,7 @@
 "emailDesc" = "Пожалуйста, укажите уникальный Email"
 "setDefaultCert" = "Установить сертификат с панели"
 "telegramDesc" = "Используйте идентификатор Telegram без символа @ или идентификатора чата (можно получить его здесь @userinfobot или использовать команду '/id' в боте)"
-"subscriptionDesc" = "вы можете найти свою ссылку подписки в разделе «Подробнее», также вы можете использовать одно и то же имя для нескольких конфигов"
+"subscriptionDesc" = "вы можете найти свою ссылку подписки в разделе «Подробнее», также вы можете использовать одно и то же имя для нескольких клиенты"
 "info" = "Информация"
 "same" = "Тот же"
 "inboundData" = "Входящие данные"
@@ -188,10 +188,10 @@
 "prefix" = "Префикс"
 "postfix" = "Постфикс"
 "delayedStart" = "Начать со времени первого подключения"
-"expireDays" = "Срок действия"
+"expireDays" = "Длительность"
 "days" = "дней"
 "renew" = "Автопродление"
-"renewDesc" = "Автоматическое продление через несколько дней после истечения срока действия. 0 = отключить"
+"renewDesc" = "Автопродление после истечения срока действия. (0 = отключить)(единица: день) "
 
 [pages.inbounds.toasts]
 "obtain" = "Получить"
@@ -312,6 +312,8 @@
 "directCountryConfigsDesc" = "Эти параметры будут подключать пользователей напрямую к доменам определенной страны."
 "ipv4Configs" = "Настройки IPv4"
 "ipv4ConfigsDesc" = "Эти параметры будут маршрутизироваться к целевым доменам только через IPv4"
+"warpConfigs" = "Настройки WARP"
+"warpConfigsDesc" = "WARP будет направлять трафик на веб-сайты через серверы Cloudflare"
 "Template" = "Шаблон конфигурации Xray"
 "TemplateDesc" = "Создание файла конфигурации Xray на основе этого шаблона."
 "FreedomStrategy" = "Настроить стратегию протокола Freedom"
@@ -354,6 +356,14 @@
 "GoogleIPv4Desc" = "Применить маршрутизацию Google для подключения к IPv4."
 "NetflixIPv4" = "Использовать IPv4 для Netflix"
 "NetflixIPv4Desc" = "Применить маршрутизацию Netflix для подключения к IPv4."
+"GoogleWARP" = "Маршрутизация Google через WARP"
+"GoogleWARPDesc" = "Добавить маршрутизацию для Google через WARP"
+"OpenAIWARP" = "Маршрутизация OpenAI (ChatGPT) через WARP"
+"OpenAIWARPDesc" = "Добавить маршрутизацию для OpenAI (ChatGPT) через WARP"
+"NetflixWARP" = "Маршрутизация Netflix через WARP"
+"NetflixWARPDesc" = "Добавить маршрутизацию для Netflix через WARP"
+"SpotifyWARP" = "Маршрутизация Spotify через WARP"
+"SpotifyWARPDesc" = "Добавить маршрутизацию для Spotify через WARP"
 "completeTemplate" = "Все"
 "Inbounds" = "Входящие"
 "Outbounds" = "Исходящие"
@@ -388,6 +398,14 @@
 "bridge" = "Мост"
 "portal" = "Портал"
 "intercon" = "Соединение"
+
+[pages.xray.wireguard]
+"secretKey" = "Секретный ключ"
+"publicKey" = "Открытый ключ"
+"allowedIPs" = "Разрешенные IP-адреса"
+"endpoint" = "Конечная точка"
+"psk" = "Общий ключ"
+"domainStrategy" = "Стратегия домена"
 
 [tgbot]
 "noResult" = "❗ Нет результатов!"

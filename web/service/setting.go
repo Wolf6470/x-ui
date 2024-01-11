@@ -55,6 +55,7 @@ var defaultValueMap = map[string]string{
 	"subEncrypt":         "true",
 	"subShowInfo":        "false",
 	"subURI":             "",
+	"warp":               "",
 }
 
 type SettingService struct {
@@ -395,6 +396,13 @@ func (s *SettingService) GetPageSize() (int, error) {
 
 func (s *SettingService) GetSubURI() (string, error) {
 	return s.getString("subURI")
+}
+
+func (s *SettingService) GetWarp() (string, error) {
+	return s.getString("warp")
+}
+func (s *SettingService) SetWarp(data string) error {
+	return s.setString("warp", data)
 }
 
 func (s *SettingService) UpdateAllSetting(allSetting *entity.AllSetting) error {

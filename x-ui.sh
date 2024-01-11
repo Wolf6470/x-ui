@@ -115,6 +115,24 @@ update() {
     fi
 }
 
+custom_version() {
+    echo "Enter the panel version (like 1.6.0):"
+    read panel_version
+
+    if [ -z "$panel_version" ]; then
+        echo "Panel version cannot be empty. Exiting."
+    exit 1
+    fi
+
+    download_link="https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh"
+
+    # Use the entered panel version in the download link
+    install_command="bash <(curl -Ls $download_link) $panel_version"
+
+    echo "Downloading and installing panel version $panel_version..."
+    eval $install_command
+}
+
 uninstall() {
     confirm "Are you sure you want to uninstall the panel? xray will also uninstalled!" "n"
     if [[ $? != 0 ]]; then
@@ -283,12 +301,6 @@ show_log() {
     fi
 }
 
-migrate_v2_ui() {
-    /usr/local/x-ui/x-ui v2-ui
-
-    before_show_menu
-}
-
 install_bbr() {
     # temporary workaround for installing bbr
     bash <(curl -L -s https://raw.githubusercontent.com/teddysun/across/master/bbr.sh)
@@ -362,7 +374,7 @@ show_status() {
     check_status
     case $? in
     0)
-        echo -e "Panel state: ${green}Runing${plain}"
+        echo -e "Panel state: ${green}Running${plain}"
         show_enable_status
         ;;
     1)
@@ -397,7 +409,7 @@ check_xray_status() {
 show_xray_status() {
     check_xray_status
     if [[ $? == 0 ]]; then
-        echo -e "xray state: ${green}Runing${plain}"
+        echo -e "xray state: ${green}Running${plain}"
     else
         echo -e "xray state: ${red}Not Running${plain}"
     fi
@@ -676,30 +688,31 @@ show_menu() {
 ————————————————
   ${green}1.${plain} Install
   ${green}2.${plain} Update
-  ${green}3.${plain} Uninstall
+  ${green}3.${plain} Custom Version
+  ${green}4.${plain} Uninstall
 ————————————————
-  ${green}4.${plain} Reset Username and Password
-  ${green}5.${plain} Reset Panel Settings
-  ${green}6.${plain} Set Panel Port
-  ${green}7.${plain} View Panel Settings
+  ${green}5.${plain} Reset Username and Password
+  ${green}6.${plain} Reset Panel Settings
+  ${green}7.${plain} Set Panel Port
+  ${green}8.${plain} View Panel Settings
 ————————————————
-  ${green}8.${plain} Start
-  ${green}9.${plain} Stop
-  ${green}10.${plain} Restart
-  ${green}11.${plain} Check State
-  ${green}12.${plain} Check Logs
+  ${green}9.${plain} Start
+  ${green}10.${plain} Stop
+  ${green}11.${plain} Restart
+  ${green}12.${plain} Check State
+  ${green}13.${plain} Check Logs
 ————————————————
-  ${green}13.${plain} Enable Autostart
-  ${green}14.${plain} Disable Autostart
+  ${green}14.${plain} Enable Autostart
+  ${green}15.${plain} Disable Autostart
 ————————————————
-  ${green}15.${plain} 一A Key Installation BBR (latest kernel)
-  ${green}16.${plain} 一SSL Certificate Management
-  ${green}17.${plain} 一Cloudflare SSL Certificate
-  ${green}18.${plain} 一Update Geo Files
+  ${green}16.${plain} A Key Installation BBR (latest kernel)
+  ${green}17.${plain} SSL Certificate Management
+  ${green}18.${plain} Cloudflare SSL Certificate
+  ${green}19.${plain} Update Geo Files
 ————————————————
  "
     show_status
-    echo && read -p "Please enter your selection [0-18]: " num
+    echo && read -p "Please enter your selection [0-19]: " num
 
     case "${num}" in
     0)
@@ -712,55 +725,58 @@ show_menu() {
         check_install && update
         ;;
     3)
-        check_install && uninstall
+        check_install && custom_version
         ;;
     4)
-        check_install && reset_user
+        check_install && uninstall
         ;;
     5)
-        check_install && reset_config
+        check_install && reset_user
         ;;
     6)
-        check_install && set_port
+        check_install && reset_config
         ;;
     7)
-        check_install && check_config
+        check_install && set_port
         ;;
     8)
-        check_install && start
+        check_install && check_config
         ;;
     9)
-        check_install && stop
+        check_install && start
         ;;
     10)
-        check_install && restart
+        check_install && stop
         ;;
     11)
-        check_install && status
+        check_install && restart
         ;;
     12)
-        check_install && show_log
+        check_install && status
         ;;
     13)
-        check_install && enable
+        check_install && show_log
         ;;
     14)
-        check_install && disable
+        check_install && enable
         ;;
     15)
-        install_bbr
+        check_install && disable
         ;;
     16)
-        ssl_cert_issue_main
+        install_bbr
         ;;
     17)
-        ssl_cert_issue_CF
+        ssl_cert_issue_main
         ;;
     18)
+        ssl_cert_issue_CF
+        ;;
+    19)
         update_geo
         ;;
     *)
-        LOGE "Please enter the correct number [0-18]"
+        LOGE "Please enter the correct number [0-19]"
         ;;
     esac
 }
@@ -787,9 +803,6 @@ if [[ $# > 0 ]]; then
         ;;
     "log")
         check_install 0 && show_log 0
-        ;;
-    "v2-ui")
-        check_install 0 && migrate_v2_ui 0
         ;;
     "update")
         check_install 0 && update 0

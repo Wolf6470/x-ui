@@ -408,6 +408,10 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 		}
 	}
 
+	if security != "tls" && security != "reality" {
+		params["security"] = "none"
+	}
+
 	externalProxies, _ := stream["externalProxy"].([]interface{})
 
 	if len(externalProxies) > 0 {
@@ -579,6 +583,10 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 				}
 			}
 		}
+	}
+
+	if security != "tls" && security != "reality" {
+		params["security"] = "none"
 	}
 
 	externalProxies, _ := stream["externalProxy"].([]interface{})

@@ -6,6 +6,7 @@ const Protocols = {
     DOKODEMO: 'dokodemo-door',
     SOCKS: 'socks',
     HTTP: 'http',
+    WIREGUARD: 'wireguard',
 };
 
 const SSMethods = {
@@ -229,6 +230,7 @@ TcpStreamSettings.TcpRequest = class extends XrayCommonClass {
 
     toJson() {
         return {
+            version: this.version,
             method: this.method,
             path: ObjectUtil.clone(this.path),
             headers: XrayCommonClass.toV2Headers(this.headers),
@@ -406,7 +408,7 @@ class HttpStreamSettings extends XrayCommonClass {
 
 class QuicStreamSettings extends XrayCommonClass {
     constructor(security='none',
-                key='', type='none') {
+                key=RandomUtil.randomSeq(10), type='none') {
         super();
         this.security = security;
         this.key = key;
@@ -458,7 +460,7 @@ class TlsStreamSettings extends XrayCommonClass {
                 cipherSuites = '',
                 rejectUnknownSni = false,
                 certificates=[new TlsStreamSettings.Cert()],
-                alpn=[],
+                alpn=[ALPN_OPTION.H2,ALPN_OPTION.HTTP1],
                 settings=new TlsStreamSettings.Settings()) {
         super();
         this.sni = serverName;
@@ -812,7 +814,7 @@ class Sniffing extends XrayCommonClass {
 class Inbound extends XrayCommonClass {
     constructor(port=RandomUtil.randomIntRange(10000, 60000),
                 listen='',
-                protocol=Protocols.VMESS,
+                protocol=Protocols.VLESS,
                 settings=null,
                 streamSettings=new StreamSettings(),
                 tag='',
@@ -1138,7 +1140,7 @@ class Inbound extends XrayCommonClass {
             }
         }
 
-        if (security === 'reality') {
+        else if (security === 'reality') {
             params.set("security", "reality");
             params.set("pbk", this.stream.reality.settings.publicKey);
             params.set("fp", this.stream.reality.settings.fingerprint);
@@ -1154,6 +1156,10 @@ class Inbound extends XrayCommonClass {
             if (type == 'tcp' && !ObjectUtil.isEmpty(flow)) {
                 params.set("flow", flow);
             }
+        }
+
+        else {
+            params.set("security", "none");
         }
 
         const link = `vless://${uuid}@${address}:${port}`;
@@ -1314,7 +1320,7 @@ class Inbound extends XrayCommonClass {
             }
         }
 
-        if (security === 'reality') {
+        else if (security === 'reality') {
             params.set("security", "reality");
             params.set("pbk", this.stream.reality.settings.publicKey);
             params.set("fp", this.stream.reality.settings.fingerprint);
@@ -1327,6 +1333,9 @@ class Inbound extends XrayCommonClass {
             if (!ObjectUtil.isEmpty(this.stream.reality.settings.spiderX)) {
                 params.set("spx", this.stream.reality.settings.spiderX);
             }
+        }
+        else {
+            params.set("security", "none");
         }
 
         const link = `trojan://${clientPassword}@${address}:${port}`;
@@ -1444,6 +1453,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.DOKODEMO: return new Inbound.DokodemoSettings(protocol);
             case Protocols.SOCKS: return new Inbound.SocksSettings(protocol);
             case Protocols.HTTP: return new Inbound.HttpSettings(protocol);
+            case Protocols.WIREGUARD: return new Inbound.WireguardSettings(protocol);
             default: return null;
         }
     }
@@ -1457,6 +1467,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.DOKODEMO: return Inbound.DokodemoSettings.fromJson(json);
             case Protocols.SOCKS: return Inbound.SocksSettings.fromJson(json);
             case Protocols.HTTP: return Inbound.HttpSettings.fromJson(json);
+            case Protocols.WIREGUARD: return Inbound.WireguardSettings.fromJson(json);
             default: return null;
         }
     }
@@ -2045,5 +2056,71 @@ Inbound.HttpSettings.HttpAccount = class extends XrayCommonClass {
 
     static fromJson(json={}) {
         return new Inbound.HttpSettings.HttpAccount(json.user, json.pass);
+    }
+};
+
+Inbound.WireguardSettings = class extends XrayCommonClass {
+    constructor(protocol, mtu=1420, secretKey=Wireguard.generateKeypair().privateKey, peers=[new Inbound.WireguardSettings.Peer()], kernelMode=false) {
+        super(protocol);
+        this.mtu = mtu;
+        this.secretKey = secretKey;
+        this.pubKey = secretKey.length>0 ? Wireguard.generateKeypair(secretKey).publicKey : '';
+        this.peers = peers;
+        this.kernelMode = kernelMode;
+    }
+
+    addPeer() {
+        this.peers.push(new Inbound.WireguardSettings.Peer());
+    }
+
+    delPeer(index) {
+        this.peers.splice(index, 1);
+    }
+
+    static fromJson(json={}){
+        return new Inbound.WireguardSettings(
+            Protocols.WIREGUARD,
+            json.mtu,
+            json.secretKey,
+            json.peers.map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
+            json.kernelMode,
+        );
+    }
+
+    toJson() {
+        return {
+            mtu: this.mtu?? undefined,
+            secretKey: this.secretKey,
+            peers: Inbound.WireguardSettings.Peer.toJsonArray(this.peers),
+            kernelMode: this.kernelMode,
+        };
+    }
+};
+
+Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
+    constructor(publicKey='', psk='', allowedIPs=['0.0.0.0/0','::/0'], keepAlive=0) {
+        super();
+        this.publicKey = publicKey;
+        this.psk = psk;
+        this.allowedIPs = allowedIPs;
+        this.keepAlive = keepAlive;
+    }
+
+    static fromJson(json={}){
+        return new Inbound.WireguardSettings.Peer(
+            json.publicKey,
+            json.preSharedKey,
+            json.allowedIPs,
+            json.keepAlive
+        );
+    }
+
+    toJson() {
+        return {
+            publicKey: this.publicKey,
+            preSharedKey: this.psk.length>0 ? this.psk : undefined,
+            allowedIPs: this.allowedIPs,
+            keepAlive: this.keepAlive?? undefined,
+        };
     }
 };
