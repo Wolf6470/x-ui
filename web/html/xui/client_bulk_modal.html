@@ -61,13 +61,13 @@
             <template slot="label">
                 <a-tooltip>
                     <template slot="title">
-                        0 <span>{{ i18n "pages.inbounds.meansNoLimit" }}</span>
+                        <span>{{ i18n "pages.inbounds.meansNoLimit" }}</span>
                     </template>
-                    {{ i18n "pages.inbounds.totalFlow" }} (GB)
+                    {{ i18n "pages.inbounds.totalFlow" }}
                     <a-icon type="question-circle"></a-icon>
                 </a-tooltip>
             </template>
-            <a-input-number v-model="clientsBulkModal.totalGB" :min="0"></a-input-number>
+            <a-input-number v-model="clientsBulkModal.totalGB" :min="0"></a-input-number> GB
         </a-form-item>
         <a-form-item label='{{ i18n "pages.client.delayedStart" }}'>
             <a-switch v-model="clientsBulkModal.delayedStart" @click="clientsBulkModal.expiryTime=0"></a-switch>
@@ -155,7 +155,7 @@
             }
             ObjectUtil.execute(clientsBulkModal.confirm, clients, clientsBulkModal.dbInbound.id);
         },
-        show({ title='', okText='{{ i18n "sure" }}', dbInbound=null, confirm=(inbound, dbInbound)=>{} }) {
+        show({ title='', okText='{{ i18n "confirm" }}', dbInbound=null, confirm=(inbound, dbInbound)=>{} }) {
             this.visible = true;
             this.title = title;
             this.okText = okText;
@@ -189,7 +189,7 @@
             clientsBulkModal.visible = false;
             clientsBulkModal.loading(false);
         },
-        loading(loading) {
+        loading(loading=true) {
             clientsBulkModal.confirmLoading = loading;
         },
     };

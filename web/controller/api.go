@@ -22,81 +22,35 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	g = g.Group("/xui/API/inbounds")
 	g.Use(a.checkLogin)
 
-	g.GET("/", a.inbounds)
-	g.GET("/get/:id", a.inbound)
-	g.GET("/getClientTraffics/:email", a.getClientTraffics)
-	g.POST("/add", a.addInbound)
-	g.POST("/del/:id", a.delInbound)
-	g.POST("/update/:id", a.updateInbound)
-	g.POST("/addClient", a.addInboundClient)
-	g.POST("/:id/delClient/:clientId", a.delInboundClient)
-	g.POST("/updateClient/:clientId", a.updateInboundClient)
-	g.POST("/:id/resetClientTraffic/:email", a.resetClientTraffic)
-	g.POST("/resetAllTraffics", a.resetAllTraffics)
-	g.POST("/resetAllClientTraffics/:id", a.resetAllClientTraffics)
-	g.POST("/delDepletedClients/:id", a.delDepletedClients)
-	g.GET("/createbackup", a.createBackup)
-	g.POST("/onlines", a.onlines)
-
 	a.inboundController = NewInboundController(g)
-}
 
-func (a *APIController) inbounds(c *gin.Context) {
-	a.inboundController.getInbounds(c)
-}
+	inboundRoutes := []struct {
+		Method  string
+		Path    string
+		Handler gin.HandlerFunc
+	}{
+		{"GET", "/createbackup", a.createBackup},
+		{"GET", "/", a.inboundController.getInbounds},
+		{"GET", "/get/:id", a.inboundController.getInbound},
+		{"GET", "/getClientTraffics/:email", a.inboundController.getClientTraffics},
+		{"POST", "/add", a.inboundController.addInbound},
+		{"POST", "/del/:id", a.inboundController.delInbound},
+		{"POST", "/update/:id", a.inboundController.updateInbound},
+		{"POST", "/addClient", a.inboundController.addInboundClient},
+		{"POST", "/:id/delClient/:clientId", a.inboundController.delInboundClient},
+		{"POST", "/updateClient/:clientId", a.inboundController.updateInboundClient},
+		{"POST", "/:id/resetClientTraffic/:email", a.inboundController.resetClientTraffic},
+		{"POST", "/resetAllTraffics", a.inboundController.resetAllTraffics},
+		{"POST", "/resetAllClientTraffics/:id", a.inboundController.resetAllClientTraffics},
+		{"POST", "/delDepletedClients/:id", a.inboundController.delDepletedClients},
+		{"POST", "/onlines", a.inboundController.onlines},
+	}
 
-func (a *APIController) inbound(c *gin.Context) {
-	a.inboundController.getInbound(c)
-}
-
-func (a *APIController) getClientTraffics(c *gin.Context) {
-	a.inboundController.getClientTraffics(c)
-}
-
-func (a *APIController) addInbound(c *gin.Context) {
-	a.inboundController.addInbound(c)
-}
-
-func (a *APIController) delInbound(c *gin.Context) {
-	a.inboundController.delInbound(c)
-}
-
-func (a *APIController) updateInbound(c *gin.Context) {
-	a.inboundController.updateInbound(c)
-}
-
-func (a *APIController) addInboundClient(c *gin.Context) {
-	a.inboundController.addInboundClient(c)
-}
-
-func (a *APIController) delInboundClient(c *gin.Context) {
-	a.inboundController.delInboundClient(c)
-}
-
-func (a *APIController) updateInboundClient(c *gin.Context) {
-	a.inboundController.updateInboundClient(c)
-}
-
-func (a *APIController) resetClientTraffic(c *gin.Context) {
-	a.inboundController.resetClientTraffic(c)
-}
-
-func (a *APIController) resetAllTraffics(c *gin.Context) {
-	a.inboundController.resetAllTraffics(c)
-}
-
-func (a *APIController) resetAllClientTraffics(c *gin.Context) {
-	a.inboundController.resetAllClientTraffics(c)
-}
-
-func (a *APIController) delDepletedClients(c *gin.Context) {
-	a.inboundController.delDepletedClients(c)
+	for _, route := range inboundRoutes {
+		g.Handle(route.Method, route.Path, route.Handler)
+	}
 }
 
 func (a *APIController) createBackup(c *gin.Context) {
 	a.Tgbot.SendBackupToAdmins()
-}
-
-func (a *APIController) onlines(c *gin.Context) {
-	a.inboundController.onlines(c)
 }

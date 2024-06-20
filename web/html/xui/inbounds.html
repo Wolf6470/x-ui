@@ -68,15 +68,15 @@
                     <a-card hoverable>
                         <a-row>
                             <a-col :xs="24" :sm="24" :lg="12">
-                                {{ i18n "pages.inbounds.totalDownUp" }}:
+                                <strong>{{ i18n "pages.inbounds.totalDownUp" }}:</strong>
                                 <a-tag color="blue">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
                             </a-col>
                             <a-col :xs="24" :sm="24" :lg="12">
-                                {{ i18n "pages.inbounds.totalUsage" }}:
+                                <strong>{{ i18n "pages.inbounds.totalUsage" }}:</strong>
                                 <a-tag color="blue">[[ sizeFormat(total.up + total.down) ]]</a-tag>
                             </a-col>
                             <a-col :xs="24" :sm="24" :lg="12">
-                                {{ i18n "pages.inbounds.inboundCount" }}:
+                                <strong>{{ i18n "pages.inbounds.inboundCount" }}:</strong>
                                 <a-tag color="blue">[[ dbInbounds.length ]]</a-tag>
                             </a-col>
                             <a-col :xs="24" :sm="24" :lg="12">
@@ -84,7 +84,7 @@
                                     <div>
                                         <a-back-top :target="() => document.getElementById('content-layout')" visibility-height="200">
                                         </a-back-top>
-                                {{ i18n "clients" }}:
+                                <strong>{{ i18n "clients" }}:</strong>
                                 <a-tag color="blue">[[ total.clients ]]</a-tag>
                                 <a-popover title='{{ i18n "disabled" }}' :overlay-class-name="themeSwitcher.currentTheme">
                                     <template slot="content">
@@ -137,6 +137,10 @@
                                                 <a-icon type="export"></a-icon>
                                                 {{ i18n "pages.inbounds.export" }}
                                             </a-menu-item>
+                                            <a-menu-item key="subs" v-if="subSettings.enable">
+                                                <a-icon type="export"></a-icon>
+                                                {{ i18n "pages.inbounds.export" }} - {{ i18n "pages.settings.subSettings" }}
+                                            </a-menu-item>
                                             <a-menu-item key="resetInbounds">
                                                 <a-icon type="reload"></a-icon>
                                                 {{ i18n "pages.inbounds.resetAllTraffic" }}
@@ -145,7 +149,7 @@
                                                 <a-icon type="file-done"></a-icon>
                                                 {{ i18n "pages.inbounds.resetAllClientTraffics" }}
                                             </a-menu-item>
-                                            <a-menu-item key="delDepletedClients">
+                                            <a-menu-item key="delDepletedClients" style="color: #FF4D4F;">
                                                 <a-icon type="rest"></a-icon>
                                                 {{ i18n "pages.inbounds.delDepletedClients" }}
                                             </a-menu-item>
@@ -181,7 +185,7 @@
                             </a-radio-group>
                         </div>
                         <a-back-top></a-back-top>
-                        <a-table :columns="isMobile ? mobileColums : columns" :row-key="dbInbound => dbInbound.id"
+                        <a-table :columns="isMobile ? mobileColumns : columns" :row-key="dbInbound => dbInbound.id"
                                  :data-source="searchedInbounds"
                                  :scroll="isMobile ? {} : { x: 1000 }"
                                  :pagination=pagination(searchedInbounds)
@@ -199,7 +203,7 @@
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
                                         </a-menu-item>
-                                        <a-menu-item key="qrcode" v-if="dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser">
+                                        <a-menu-item key="qrcode" v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard">
                                             <a-icon type="qrcode"></a-icon>
                                             {{ i18n "qrCode" }}
                                         </a-menu-item>
@@ -220,7 +224,11 @@
                                                 <a-icon type="export"></a-icon>
                                                 {{ i18n "pages.inbounds.export"}}
                                             </a-menu-item>
-                                            <a-menu-item key="delDepletedClients">
+                                            <a-menu-item key="subs" v-if="subSettings.enable">
+                                                <a-icon type="export"></a-icon>
+                                                {{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}
+                                            </a-menu-item>
+                                            <a-menu-item key="delDepletedClients" style="color: #FF4D4F;">
                                                 <a-icon type="rest"></a-icon>
                                                 {{ i18n "pages.inbounds.delDepletedClients" }}
                                             </a-menu-item>
@@ -236,7 +244,7 @@
                                         </a-menu-item>
                                         <a-menu-item key="clipboard">
                                             <a-icon type="copy"></a-icon>
-                                            {{ i18n "pages.inbounds.copyToClipboard" }}
+                                            {{ i18n "pages.inbounds.exportInbound" }}
                                         </a-menu-item>
                                         <a-menu-item key="clone">
                                             <a-icon type="block"></a-icon> {{ i18n "pages.inbounds.clone"}}
@@ -441,8 +449,8 @@
 {{template "js" .}}
 <script src="{{ .base_path }}assets/base64/base64.min.js"></script>
 <script src="{{ .base_path }}assets/qrcode/qrious.min.js"></script>
-<script src="{{ .base_path }}assets/clipboard/clipboard.min.js"></script>
-<script src="{{ .base_path }}assets/uri/URI.min.js"></script>
+<script src="{{ .base_path }}assets/clipboard/clipboard.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/uri/URI.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/xray.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
 {{template "component/themeSwitcher" .}}
@@ -494,7 +502,7 @@
         scopedSlots: { customRender: 'expiryTime' },
     }];
 
-    const mobileColums = [{
+    const mobileColumns = [{
         title: "ID",
         align: 'right',
         dataIndex: "id",
@@ -518,19 +526,73 @@
     }];
 
     const innerColumns = [
-        { title: '{{ i18n "pages.inbounds.operate" }}', width: 50, scopedSlots: { customRender: 'actions' } },
-        { title: '{{ i18n "pages.inbounds.enable" }}', width: 20, scopedSlots: { customRender: 'enable' } },
-        { title: '{{ i18n "online" }}', width: 20, scopedSlots: { customRender: 'online' } },
-        { title: '{{ i18n "pages.inbounds.client" }}', width: 70, scopedSlots: { customRender: 'client' } },
-        { title: '{{ i18n "pages.inbounds.traffic" }}', width: 80, align: 'center', scopedSlots: { customRender: 'traffic' } },
-        { title: '{{ i18n "pages.inbounds.expireDate" }}', width: 70, align: 'center', scopedSlots: { customRender: 'expiryTime' } },
-    ];
+            {
+                title: '{{ i18n "pages.inbounds.operate" }}',
+                width: 50,
+                scopedSlots: { customRender: 'actions' },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.enable" }}',
+                width: 20,
+                scopedSlots: { customRender: 'enable' },
+            },
+            {
+                title: '{{ i18n "online" }}',
+                width: 20,
+                scopedSlots: { customRender: 'online' },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.client" }}',
+                dataIndex: 'email',
+                width: 70,
+                scopedSlots: { customRender: 'client' },
+                sorter: (a, b) => {
+                    const clientA = a.email || '';
+                    const clientB = b.email || '';
+                    return clientA.localeCompare(clientB, undefined, { sensitivity: 'base' });
+                },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.traffic" }}',
+                dataIndex: 'traffic',
+                width: 80,
+                align: 'center',
+                scopedSlots: { customRender: 'traffic' },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.expireDate" }}',
+                width: 70,
+                align: 'center',
+                scopedSlots: { customRender: 'expiryTime' },
+            },
+        ];
 
-    const innerMobileColumns = [
-        { title: '{{ i18n "pages.inbounds.operate" }}', width: 10, align: 'center', scopedSlots: { customRender: 'actionMenu' } },
-        { title: '{{ i18n "pages.inbounds.client" }}', width: 90, align: 'left', scopedSlots: { customRender: 'client' } },
-        { title: '{{ i18n "pages.inbounds.info" }}', width: 10, align: 'center', scopedSlots: { customRender: 'info' } },
-    ];
+        const innerMobileColumns = [
+            {
+                title: '{{ i18n "pages.inbounds.operate" }}',
+                width: 10,
+                align: 'center',
+                scopedSlots: { customRender: 'actionMenu' },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.client" }}',
+                dataIndex: 'email',
+                width: 90,
+                align: 'left',
+                scopedSlots: { customRender: 'client' },
+                sorter: (a, b) => {
+                    const clientA = a.email || '';
+                    const clientB = b.email || '';
+                    return clientA.localeCompare(clientB, undefined, { sensitivity: 'base' });
+                },
+            },
+            {
+                title: '{{ i18n "pages.inbounds.info" }}',
+                width: 10,
+                align: 'center',
+                scopedSlots: { customRender: 'info' },
+            },
+        ];
 
     const app = new Vue({
         delimiters: ['[[', ']]'],
@@ -556,7 +618,8 @@
             refreshInterval: Number(localStorage.getItem("refreshInterval")) || 5000,
             subSettings: {
                 enable : false,
-                subURI : ''
+                subURI : '',
+                subJsonURI : '',
             },
             remarkModel: '-ieo',
             tgBotEnable: false,
@@ -601,7 +664,8 @@
                     this.tgBotEnable = tgBotEnable;
                     this.subSettings = {
                         enable : subEnable,
-                        subURI: subURI
+                        subURI: subURI,
+                        subJsonURI: subJsonURI
                     };
                     this.pageSize = pageSize;
                     this.remarkModel = remarkModel;
@@ -638,8 +702,12 @@
                     clientCount = clients.length;
                     if (dbInbound.enable) {
                         clients.forEach(client => {
-                            client.enable ? active.push(client.email) : deactive.push(client.email);
-                            if(this.isClientOnline(client.email)) online.push(client.email);
+                            if (client.enable) {
+                                active.push(client.email);
+                                if(this.isClientOnline(client.email)) online.push(client.email);
+                            } else {
+                                deactive.push(client.email);
+                            }
                         });
                         clientStats.forEach(client => {
                             if (!client.enable) {
@@ -727,6 +795,9 @@
                     case "export":
                         this.exportAllLinks();
                         break;
+                    case "subs":
+                        this.exportAllSubs();
+                        break;
                     case "resetInbounds":
                         this.resetAllTraffic();
                         break;
@@ -758,6 +829,9 @@
                     case "export":
                         this.inboundLinks(dbInbound.id);
                         break;
+                    case "subs":
+                        this.exportSubs(dbInbound.id);
+                        break;
                     case "clipboard":
                         this.copyToClipboard(dbInbound.id);
                         break;
@@ -784,9 +858,7 @@
                     okText: '{{ i18n "pages.inbounds.create"}}',
                     cancelText: '{{ i18n "close" }}',
                     confirm: async (inbound, dbInbound) => {
-                        inModal.loading();
-                        await this.addInbound(inbound, dbInbound);
-                        inModal.close();
+                        await this.addInbound(inbound, dbInbound, inModal);
                     },
                     isEdit: false
                 });
@@ -801,9 +873,7 @@
                     inbound: inbound,
                     dbInbound: dbInbound,
                     confirm: async (inbound, dbInbound) => {
-                        inModal.loading();
                         await this.updateInbound(inbound, dbInbound);
-                        inModal.close();
                     },
                     isEdit: true
                 });
@@ -836,8 +906,8 @@
                     port: RandomUtil.randomIntRange(10000, 60000),
                     protocol: baseInbound.protocol,
                     settings: Inbound.Settings.getSettings(baseInbound.protocol).toString(),
-		    streamSettings: baseInbound.stream.toString(),
-                    sniffing: baseInbound.canSniffing() ? baseInbound.sniffing.toString() : '{}',
+                    streamSettings: baseInbound.stream.toString(),
+                    sniffing: baseInbound.sniffing.toString(),
                 };
                 await this.submit('/xui/inbound/add', data, inModal);
             },
@@ -856,7 +926,7 @@
                     settings: inbound.settings.toString(),
                 };
                 if (inbound.canEnableStream()) data.streamSettings = inbound.stream.toString();
-                if (inbound.canSniffing()) data.sniffing = inbound.sniffing.toString();
+                data.sniffing = inbound.sniffing.toString();
 
                 await this.submit('/xui/inbound/add', data, inModal);
             },
@@ -875,7 +945,7 @@
                     settings: inbound.settings.toString(),
                 };
                 if (inbound.canEnableStream()) data.streamSettings = inbound.stream.toString();
-                if (inbound.canSniffing()) data.sniffing = inbound.sniffing.toString();
+                data.sniffing = inbound.sniffing.toString();
 
                 await this.submit(`/xui/inbound/update/${dbInbound.id}`, data, inModal);
             },
@@ -886,9 +956,7 @@
                     okText: '{{ i18n "pages.client.submitAdd"}}',
                     dbInbound: dbInbound,
                     confirm: async (clients, dbInboundId) => {
-                        clientModal.loading();
-                        await this.addClient(clients, dbInboundId);
-                        clientModal.close();
+                        await this.addClient(clients, dbInboundId, clientModal);
                     },
                     isEdit: false
                 });
@@ -900,9 +968,7 @@
                     okText: '{{ i18n "pages.client.bulk"}}',
                     dbInbound: dbInbound,
                     confirm: async (clients, dbInboundId) => {
-                        clientsBulkModal.loading();
-                        await this.addClient(clients, dbInboundId);
-                        clientsBulkModal.close();
+                        await this.addClient(clients, dbInboundId, clientsBulkModal);
                     },
                 });
             },
@@ -931,19 +997,19 @@
                     default: return clients.findIndex(item => item.id === client.id && item.email === client.email);
                 }
             },
-            async addClient(clients, dbInboundId) {
+            async addClient(clients, dbInboundId, modal) {
                 const data = {
                     id: dbInboundId,
                     settings: '{"clients": [' + clients.toString() + ']}',
                 };
-                await this.submit(`/xui/inbound/addClient`, data);
+                await this.submit(`/xui/inbound/addClient`, data, modal);
             },
             async updateClient(client, dbInboundId, clientId) {
                 const data = {
                     id: dbInboundId,
                     settings: '{"clients": [' + client.toString() + ']}',
                 };
-                await this.submit(`/xui/inbound/updateClient/${clientId}`, data);
+                await this.submit(`/xui/inbound/updateClient/${clientId}`, data, clientModal);
             },
             resetTraffic(dbInboundId) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
@@ -1046,8 +1112,8 @@
                 await this.updateClient(clients[index], dbInboundId, clientId);
                 this.loading(false);
             },
-            async submit(url, data) {
-                const msg = await HttpUtil.postWithModal(url, data);
+            async submit(url, data, modal) {
+                const msg = await HttpUtil.postWithModal(url, data, modal);
                 if (msg.success) {
                     await this.getDBInbounds();
                 }
@@ -1182,6 +1248,22 @@
                 newDbInbound = this.checkFallback(dbInbound);
                 txtModal.show('{{ i18n "pages.inbounds.export"}}', newDbInbound.genInboundLinks(this.remarkModel), newDbInbound.remark);
             },
+            exportSubs(dbInboundId) {
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const clients = this.getInboundClients(dbInbound);
+                let subLinks = []
+                if (clients != null){
+                    clients.forEach(c => {
+                        if (c.subId && c.subId.length>0){
+                            subLinks.push(this.subSettings.subURI + c.subId + "?name=" + c.subId)
+                        }
+                    })
+                }
+                txtModal.show(
+                    '{{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}',
+                    [...new Set(subLinks)].join('\n'),
+                    dbInbound.remark + "-Subs");
+            },
             importInbound() {
                 promptModal.open({
                     title: '{{ i18n "pages.inbounds.importInbound" }}',
@@ -1190,11 +1272,27 @@
                     okText: '{{ i18n "pages.inbounds.import" }}',
                     confirm: async (dbInboundText) => {
                         await this.submit('/xui/inbound/import', {data: dbInboundText}, promptModal);
-                        promptModal.close();
                     },
                 });
             },
-			exportAllLinks() {
+			exportAllSubs() {
+                let subLinks = []
+                for (const dbInbound of this.dbInbounds) {
+                    const clients = this.getInboundClients(dbInbound);
+                    if (clients != null){
+                        clients.forEach(c => {
+                            if (c.subId && c.subId.length>0){
+                                subLinks.push(this.subSettings.subURI + c.subId + "?name=" + c.subId)
+                            }
+                        })
+                    }
+                }
+                txtModal.show(
+                    '{{ i18n "pages.inbounds.export"}} - {{ i18n "pages.settings.subSettings" }}',
+                    [...new Set(subLinks)].join('\r\n'),
+                    'All-Inbounds-Subs');
+            },
+            exportAllLinks() {
                 let copyText = [];
                 for (const dbInbound of this.dbInbounds) {
                     copyText.push(dbInbound.genInboundLinks(this.remarkModel));

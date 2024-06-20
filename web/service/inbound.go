@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
 	"x-ui/database"
 	"x-ui/database/model"
 	"x-ui/logger"
@@ -38,9 +39,25 @@ func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
 	return inbounds, nil
 }
 
-func (s *InboundService) checkPortExist(port int, ignoreId int) (bool, error) {
+func (s *InboundService) checkPortExist(listen string, port int, ignoreId int) (bool, error) {
 	db := database.GetDB()
-	db = db.Model(model.Inbound{}).Where("port = ?", port)
+	if listen == "" || listen == "0.0.0.0" || listen == "::" || listen == "::0" {
+		db = db.Model(model.Inbound{}).Where("port = ?", port)
+	} else {
+		db = db.Model(model.Inbound{}).
+			Where("port = ?", port).
+			Where(
+				db.Model(model.Inbound{}).Where(
+					"listen = ?", listen,
+				).Or(
+					"listen = \"\"",
+				).Or(
+					"listen = \"0.0.0.0\"",
+				).Or(
+					"listen = \"::\"",
+				).Or(
+					"listen = \"::0\""))
+	}
 	if ignoreId > 0 {
 		db = db.Where("id != ?", ignoreId)
 	}
@@ -74,7 +91,6 @@ func (s *InboundService) getAllEmails() ([]string, error) {
 		FROM inbounds,
 			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
 		`).Scan(&emails).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +151,7 @@ func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (stri
 }
 
 func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
-	exist, err := s.checkPortExist(inbound.Port, 0)
+	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, 0)
 	if err != nil {
 		return inbound, false, err
 	}
@@ -154,6 +170,23 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	clients, err := s.GetClients(inbound)
 	if err != nil {
 		return inbound, false, err
+	}
+
+	// Secure client ID
+	for _, client := range clients {
+		if inbound.Protocol == "trojan" {
+			if client.Password == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else if inbound.Protocol == "shadowsocks" {
+			if client.Email == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else {
+			if client.ID == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		}
 	}
 
 	db := database.GetDB()
@@ -238,7 +271,7 @@ func (s *InboundService) GetInbound(id int) (*model.Inbound, error) {
 }
 
 func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
-	exist, err := s.checkPortExist(inbound.Port, inbound.Id)
+	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, inbound.Id)
 	if err != nil {
 		return inbound, false, err
 	}
@@ -281,7 +314,11 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	oldInbound.Settings = inbound.Settings
 	oldInbound.StreamSettings = inbound.StreamSettings
 	oldInbound.Sniffing = inbound.Sniffing
-	oldInbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
+		oldInbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	} else {
+		oldInbound.Tag = fmt.Sprintf("inbound-%v:%v", inbound.Listen, inbound.Port)
+	}
 
 	needRestart := false
 	s.xrayApi.Init(p.GetAPIPort())
@@ -379,6 +416,23 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 		return false, err
 	}
 
+	// Secure client ID
+	for _, client := range clients {
+		if oldInbound.Protocol == "trojan" {
+			if client.Password == "" {
+				return false, common.NewError("empty client ID")
+			}
+		} else if oldInbound.Protocol == "shadowsocks" {
+			if client.Email == "" {
+				return false, common.NewError("empty client ID")
+			}
+		} else {
+			if client.ID == "" {
+				return false, common.NewError("empty client ID")
+			}
+		}
+	}
+
 	var oldSettings map[string]interface{}
 	err = json.Unmarshal([]byte(oldInbound.Settings), &oldSettings)
 	if err != nil {
@@ -462,9 +516,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		client_key = "email"
 	}
 
-	inerfaceClients := settings["clients"].([]interface{})
+	interfaceClients := settings["clients"].([]interface{})
 	var newClients []interface{}
-	for _, client := range inerfaceClients {
+	for _, client := range interfaceClients {
 		c := client.(map[string]interface{})
 		c_id := c[client_key].(string)
 		if c_id == clientId {
@@ -472,6 +526,10 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		} else {
 			newClients = append(newClients, client)
 		}
+	}
+
+	if len(newClients) == 0 {
+		return false, common.NewError("no client remained in Inbound")
 	}
 
 	settings["clients"] = newClients
@@ -529,21 +587,30 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 
 	oldEmail := ""
-	clientIndex := 0
+	newClientId := ""
+	clientIndex := -1
 	for index, oldClient := range oldClients {
 		oldClientId := ""
 		if oldInbound.Protocol == "trojan" {
 			oldClientId = oldClient.Password
+			newClientId = clients[0].Password
 		} else if oldInbound.Protocol == "shadowsocks" {
 			oldClientId = oldClient.Email
+			newClientId = clients[0].Email
 		} else {
 			oldClientId = oldClient.ID
+			newClientId = clients[0].ID
 		}
 		if clientId == oldClientId {
 			oldEmail = oldClient.Email
 			clientIndex = index
 			break
 		}
+	}
+
+	// Validate new client ID
+	if newClientId == "" || clientIndex == -1 {
+		return false, common.NewError("empty client ID")
 	}
 
 	if len(clients[0].Email) > 0 && clients[0].Email != oldEmail {
@@ -600,8 +667,12 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	needRestart := false
 	if len(oldEmail) > 0 {
 		s.xrayApi.Init(p.GetAPIPort())
-		if s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail) == nil {
+		err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
+		if err1 == nil {
 			logger.Debug("Old client deleted by api:", clients[0].Email)
+		} else {
+			logger.Debug("Error in deleting client by api:", err1)
+			needRestart = true
 		}
 		if clients[0].Enable {
 			cipher := ""
@@ -917,7 +988,7 @@ func (s *InboundService) disableInvalidInbounds(tx *gorm.DB) (bool, int64, error
 		s.xrayApi.Init(p.GetAPIPort())
 		for _, tag := range tags {
 			err1 := s.xrayApi.DelInbound(tag)
-			if err == nil {
+			if err1 == nil {
 				logger.Debug("Inbound disabled by api:", tag)
 			} else {
 				logger.Debug("Error in disabling inbound by api:", err1)
@@ -997,10 +1068,7 @@ func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model
 	clientTraffic.Reset = client.Reset
 	result := tx.Create(&clientTraffic)
 	err := result.Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *model.Client) error {
@@ -1011,13 +1079,12 @@ func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *mod
 			"email":       client.Email,
 			"total":       client.TotalGB,
 			"expiry_time": client.ExpiryTime,
-			"reset":       client.Reset})
+			"reset":       client.Reset,
+		})
 	err := result.Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
+
 func (s *InboundService) DelClientStat(tx *gorm.DB, email string) error {
 	return tx.Where("email = ?", email).Delete(xray.ClientTraffic{}).Error
 }
@@ -1098,11 +1165,7 @@ func (s *InboundService) ResetAllClientTraffics(id int) error {
 		Updates(map[string]interface{}{"enable": true, "up": 0, "down": 0})
 
 	err := result.Error
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (s *InboundService) ResetAllTraffics() error {
@@ -1113,11 +1176,7 @@ func (s *InboundService) ResetAllTraffics() error {
 		Updates(map[string]interface{}{"up": 0, "down": 0})
 
 	err := result.Error
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (s *InboundService) DelDepletedClients(id int) (err error) {
@@ -1316,7 +1375,7 @@ func (s *InboundService) MigrationRequirements() {
 		json.Unmarshal([]byte(inbounds[inbound_index].Settings), &settings)
 		clients, ok := settings["clients"].([]interface{})
 		if ok {
-			// Fix Clinet configuration problems
+			// Fix Client configuration problems
 			var newClients []interface{}
 			for client_index := range clients {
 				c := clients[client_index].(map[string]interface{})

@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
 	"x-ui/config"
 	"x-ui/logger"
 	"x-ui/web/entity"
@@ -48,18 +49,11 @@ func jsonMsgObj(c *gin.Context, msg string, obj interface{}, err error) {
 	c.JSON(http.StatusOK, m)
 }
 
-func pureJsonMsg(c *gin.Context, success bool, msg string) {
-	if success {
-		c.JSON(http.StatusOK, entity.Msg{
-			Success: true,
-			Msg:     msg,
-		})
-	} else {
-		c.JSON(http.StatusOK, entity.Msg{
-			Success: false,
-			Msg:     msg,
-		})
-	}
+func pureJsonMsg(c *gin.Context, statusCode int, success bool, msg string) {
+	c.JSON(statusCode, entity.Msg{
+		Success: success,
+		Msg:     msg,
+	})
 }
 
 func html(c *gin.Context, name string, title string, data gin.H) {
@@ -67,7 +61,7 @@ func html(c *gin.Context, name string, title string, data gin.H) {
 		data = gin.H{}
 	}
 	data["title"] = title
-	data["host"] = strings.Split(c.Request.Host, ":")[0]
+	data["host"], _, _ = net.SplitHostPort(c.Request.Host)
 	data["request_uri"] = c.Request.RequestURI
 	data["base_path"] = c.GetString("base_path")
 	c.HTML(http.StatusOK, name, getContext(data))

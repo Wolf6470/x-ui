@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+
 	"x-ui/util/json_util"
 	"x-ui/xray"
 )
@@ -36,7 +37,7 @@ type Inbound struct {
 
 	// config part
 	Listen         string   `json:"listen" form:"listen"`
-	Port           int      `json:"port" form:"port" gorm:"unique"`
+	Port           int      `json:"port" form:"port"`
 	Protocol       Protocol `json:"protocol" form:"protocol"`
 	Settings       string   `json:"settings" form:"settings"`
 	StreamSettings string   `json:"streamSettings" form:"streamSettings"`

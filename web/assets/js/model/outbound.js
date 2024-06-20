@@ -51,7 +51,14 @@ const OutboundDomainStrategies = [
     "AsIs",
     "UseIP",
     "UseIPv4",
-    "UseIPv6"
+    "UseIPv6",
+    "UseIPv6v4",
+    "UseIPv4v6",
+    "ForceIP",
+    "ForceIPv6v4",
+    "ForceIPv6",
+    "ForceIPv4v6",
+    "ForceIPv4"
 ];
 
 const WireguardDomainStrategy = [
@@ -187,14 +194,14 @@ class WsStreamSettings extends CommonClass {
     static fromJson(json={}) {
         return new WsStreamSettings(
             json.path,
-            json.headers && !ObjectUtil.isEmpty(json.headers.Host) ? json.headers.Host : '',
+            json.host,
         );
     }
 
     toJson() {
         return {
             path: this.path,
-            headers: ObjectUtil.isEmpty(this.host) ? undefined : {Host: this.host},
+            host: this.host,
         };
     }
 }
@@ -250,21 +257,67 @@ class QuicStreamSettings extends CommonClass {
 }
 
 class GrpcStreamSettings extends CommonClass {
-    constructor(serviceName="", multiMode=false) {
+    constructor(serviceName="", authority="", multiMode=false) {
         super();
         this.serviceName = serviceName;
+        this.authority = authority;
         this.multiMode = multiMode;
     }
 
     static fromJson(json={}) {
-        return new GrpcStreamSettings(json.serviceName, json.multiMode);
+        return new GrpcStreamSettings(json.serviceName, json.authority, json.multiMode);
     }
 
     toJson() {
         return {
             serviceName: this.serviceName,
+            authority: this.authority,
             multiMode: this.multiMode,
         }
+    }
+}
+
+class HttpUpgradeStreamSettings extends CommonClass {
+    constructor(path='/', host='') {
+        super();
+        this.path = path;
+        this.host = host;
+    }
+
+    static fromJson(json={}) {
+        return new HttpUpgradeStreamSettings(
+            json.path,
+            json.host,
+        );
+    }
+
+    toJson() {
+        return {
+            path: this.path,
+            host: this.host,
+        };
+    }
+}
+
+class SplitHTTPStreamSettings extends CommonClass {
+    constructor(path='/', host='') {
+        super();
+        this.path = path;
+        this.host = host;
+    }
+
+    static fromJson(json={}) {
+        return new SplitHTTPStreamSettings(
+            json.path,
+            json.host,
+        );
+    }
+
+    toJson() {
+        return {
+            path: this.path,
+            host: this.host,
+        };
     }
 }
 
@@ -328,6 +381,35 @@ class RealityStreamSettings extends CommonClass {
     }
 };
 
+class SockoptStreamSettings extends CommonClass {
+    constructor(dialerProxy = "", tcpFastOpen = false, tcpKeepAliveInterval = 0, tcpNoDelay = false) {
+        super();
+        this.dialerProxy = dialerProxy;
+        this.tcpFastOpen = tcpFastOpen;
+        this.tcpKeepAliveInterval = tcpKeepAliveInterval;
+        this.tcpNoDelay = tcpNoDelay;
+    }
+
+    static fromJson(json = {}) {
+        if (Object.keys(json).length === 0) return undefined;
+        return new SockoptStreamSettings(
+            json.dialerProxy,
+            json.tcpFastOpen,
+            json.tcpKeepAliveInterval,
+            json.tcpNoDelay,
+        );
+    }
+
+    toJson() {
+        return {
+            dialerProxy: this.dialerProxy,
+            tcpFastOpen: this.tcpFastOpen,
+            tcpKeepAliveInterval: this.tcpKeepAliveInterval,
+            tcpNoDelay: this.tcpNoDelay,
+        };
+    }
+}
+
 class StreamSettings extends CommonClass {
     constructor(network='tcp',
                 security='none',
@@ -339,6 +421,9 @@ class StreamSettings extends CommonClass {
                 httpSettings=new HttpStreamSettings(),
                 quicSettings=new QuicStreamSettings(),
                 grpcSettings=new GrpcStreamSettings(),
+                httpupgradeSettings=new HttpUpgradeStreamSettings(),
+                splithttpSettings=new SplitHTTPStreamSettings(),
+                sockopt = undefined,
                 ) {
         super();
         this.network = network;
@@ -351,6 +436,9 @@ class StreamSettings extends CommonClass {
         this.http = httpSettings;
         this.quic = quicSettings;
         this.grpc = grpcSettings;
+        this.httpupgrade = httpupgradeSettings;
+        this.splithttp = splithttpSettings;
+        this.sockopt = sockopt;
     }
     
     get isTls() {
@@ -359,6 +447,14 @@ class StreamSettings extends CommonClass {
 
     get isReality() {
         return this.security === "reality";
+    }
+
+    get sockoptSwitch() {
+        return this.sockopt != undefined;
+    }
+
+    set sockoptSwitch(value) {
+        this.sockopt = value ? new SockoptStreamSettings() : undefined;
     }
 
     static fromJson(json={}) {
@@ -373,6 +469,9 @@ class StreamSettings extends CommonClass {
             HttpStreamSettings.fromJson(json.httpSettings),
             QuicStreamSettings.fromJson(json.quicSettings),
             GrpcStreamSettings.fromJson(json.grpcSettings),
+            HttpUpgradeStreamSettings.fromJson(json.httpupgradeSettings),
+            SplitHTTPStreamSettings.fromJson(json.splithttpSettings),
+            SockoptStreamSettings.fromJson(json.sockopt),
         );
     }
 
@@ -389,6 +488,38 @@ class StreamSettings extends CommonClass {
             httpSettings: network === 'http' ? this.http.toJson() : undefined,
             quicSettings: network === 'quic' ? this.quic.toJson() : undefined,
             grpcSettings: network === 'grpc' ? this.grpc.toJson() : undefined,
+            httpupgradeSettings: network === 'httpupgrade' ? this.httpupgrade.toJson() : undefined,
+            splithttpSettings: network === 'splithttp' ? this.splithttp.toJson() : undefined,
+            sockopt: this.sockopt != undefined ? this.sockopt.toJson() : undefined,
+        };
+    }
+}
+
+class Mux extends CommonClass {
+    constructor(enabled = false, concurrency = 8, xudpConcurrency = 16, xudpProxyUDP443 = "reject") {
+        super();
+        this.enabled = enabled;
+        this.concurrency = concurrency;
+        this.xudpConcurrency = xudpConcurrency;
+        this.xudpProxyUDP443 = xudpProxyUDP443;
+    }
+
+    static fromJson(json = {}) {
+        if (Object.keys(json).length === 0) return undefined;
+        return new Mux(
+            json.enabled,
+            json.concurrency,
+            json.xudpConcurrency,
+            json.xudpProxyUDP443,
+        );
+    }
+
+    toJson() {
+        return {
+            enabled: this.enabled,
+            concurrency: this.concurrency,
+            xudpConcurrency: this.xudpConcurrency,
+            xudpProxyUDP443: this.xudpProxyUDP443,
         };
     }
 }
@@ -399,12 +530,16 @@ class Outbound extends CommonClass {
         protocol=Protocols.VMess,
         settings=null,
         streamSettings = new StreamSettings(),
+        sendThrough,
+        mux = new Mux(),
     ) {
         super();
         this.tag = tag;
         this._protocol = protocol;
         this.settings = settings == null ? Outbound.Settings.getSettings(protocol) : settings;
         this.stream = streamSettings;
+        this.sendThrough = sendThrough;
+        this.mux = mux;
     }
 
     get protocol() {
@@ -418,8 +553,8 @@ class Outbound extends CommonClass {
     }
 
     canEnableTls() {
-        if (![Protocols.VMess, Protocols.VLESS, Protocols.Trojan].includes(this.protocol)) return false;
-        return ["tcp", "ws", "http", "quic", "grpc"].includes(this.stream.network);
+        if (![Protocols.VMess, Protocols.VLESS, Protocols.Trojan, Protocols.Shadowsocks].includes(this.protocol)) return false;
+        return ["tcp", "ws", "http", "quic", "grpc", "httpupgrade" , "splithttp"].includes(this.stream.network);
     }
 
     //this is used for xtls-rprx-vision
@@ -437,6 +572,10 @@ class Outbound extends CommonClass {
 
     canEnableStream() {
         return [Protocols.VMess, Protocols.VLESS, Protocols.Trojan, Protocols.Shadowsocks].includes(this.protocol);
+    }
+
+    canEnableMux() {
+        return [Protocols.VMess, Protocols.VLESS, Protocols.Trojan, Protocols.Shadowsocks, Protocols.HTTP, Protocols.Socks].includes(this.protocol);
     }
 
     hasVnext() {
@@ -469,15 +608,26 @@ class Outbound extends CommonClass {
             json.protocol,
             Outbound.Settings.fromJson(json.protocol, json.settings),
             StreamSettings.fromJson(json.streamSettings),
+            json.sendThrough,
+            Mux.fromJson(json.mux),
         )
     }
 
     toJson() {
+        var stream;
+        if (this.canEnableStream()) {
+            stream = this.stream.toJson();
+        } else {
+            if (this.stream?.sockopt)
+                stream = { sockopt: this.stream.sockopt.toJson() };
+        }
         return {
             tag: this.tag == '' ? undefined : this.tag,
             protocol: this.protocol,
             settings: this.settings instanceof CommonClass ? this.settings.toJson() : this.settings,
-            streamSettings: this.canEnableStream() ? this.stream.toJson() : undefined,
+            streamSettings: stream,
+            sendThrough: this.sendThrough != "" ? this.sendThrough : undefined,
+            mux: this.mux?.enabled ? this.mux : undefined,
         };
     }
 
@@ -522,7 +672,11 @@ class Outbound extends CommonClass {
                 json.path,
                 json.type ? json.type : 'none');
         } else if (network === 'grpc') {
-            stream.grpc = new GrpcStreamSettings(json.path, json.type == 'multi');
+            stream.grpc = new GrpcStreamSettings(json.path, json.authority, json.type == 'multi');
+        } else if (network === 'httpupgrade') {
+            stream.httpupgrade = new HttpUpgradeStreamSettings(json.path,json.host);
+        } else if (network === 'splithttp') {
+            stream.splithttp = new SplitHTTPStreamSettings(json.path,json.host);
         }
 
         if(json.tls && json.tls == 'tls'){
@@ -533,21 +687,22 @@ class Outbound extends CommonClass {
                 json.allowInsecure);
         }
 
+        const port = json.port * 1;
 
-        return new Outbound(json.ps, Protocols.VMess, new Outbound.VmessSettings(json.add, json.port, json.id), stream);
+        return new Outbound(json.ps, Protocols.VMess, new Outbound.VmessSettings(json.add, port, json.id), stream);
     }
 
     static fromParamLink(link){
         const url = new URL(link);
-        let type = url.searchParams.get('type');
+        let type = url.searchParams.get('type') ?? 'tcp';
         let security = url.searchParams.get('security') ?? 'none';
         let stream = new StreamSettings(type, security);
 
-        let headerType = url.searchParams.get('headerType');
-        let host = url.searchParams.get('host');
-        let path = url.searchParams.get('path');
+        let headerType = url.searchParams.get('headerType') ?? undefined;
+        let host = url.searchParams.get('host') ?? undefined;
+        let path = url.searchParams.get('path') ?? undefined;
 
-        if (type === 'tcp') {
+        if (type === 'tcp' || type === 'none') {
             stream.tcp = new TcpStreamSettings(headerType ?? 'none', host, path);
         } else if (type === 'kcp') {
             stream.kcp = new KcpStreamSettings();
@@ -563,7 +718,14 @@ class Outbound extends CommonClass {
                 url.searchParams.get('key') ?? '',
                 headerType ?? 'none');
         } else if (type === 'grpc') {
-            stream.grpc = new GrpcStreamSettings(url.searchParams.get('serviceName') ?? '', url.searchParams.get('mode') == 'multi');
+            stream.grpc = new GrpcStreamSettings(
+                url.searchParams.get('serviceName') ?? '',
+                url.searchParams.get('authority') ?? '',
+                url.searchParams.get('mode') == 'multi');
+        } else if (type === 'httpupgrade') {
+            stream.httpupgrade = new HttpUpgradeStreamSettings(path,host);
+        } else if (type === 'splithttp') {
+            stream.splithttp = new SplitHTTPStreamSettings(path,host);
         }
 
         if(security == 'tls'){
@@ -583,10 +745,7 @@ class Outbound extends CommonClass {
             stream.reality = new RealityStreamSettings(pbk, fp, sni, sid, spx);
         }
 
-        let data = link.split('?');
-        if(data.length != 2) return null;
-
-        const regex = /([^@]+):\/\/([^@]+)@([^:]+):(\d+)\?(.*)$/;
+        const regex = /([^@]+):\/\/([^@]+)@(.+):(\d+)(.*)$/;
         const match = link.match(regex);
 
         if (!match) return null;
@@ -700,7 +859,7 @@ Outbound.FreedomSettings.Fragment = class extends CommonClass {
 Outbound.BlackholeSettings = class extends CommonClass {
     constructor(type) {
         super();
-        this.type;
+        this.type = type;
     }
 
     static fromJson(json={}) {
@@ -860,13 +1019,13 @@ Outbound.SocksSettings = class extends CommonClass {
     }
 
     static fromJson(json={}) {
-        servers = json.servers;
+        let servers = json.servers;
         if(ObjectUtil.isArrEmpty(servers)) servers=[{users: [{}]}];
         return new Outbound.SocksSettings(
             servers[0].address,
             servers[0].port,
             ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].user,
-            ObjectUtil.isArrEmpty(servers[0].pass) ? '' : servers[0].users[0].pass,
+            ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].pass,
         );
     }
 
@@ -890,13 +1049,13 @@ Outbound.HttpSettings = class extends CommonClass {
     }
 
     static fromJson(json={}) {
-        servers = json.servers;
+        let servers = json.servers;
         if(ObjectUtil.isArrEmpty(servers)) servers=[{users: [{}]}];
         return new Outbound.HttpSettings(
             servers[0].address,
             servers[0].port,
             ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].user,
-            ObjectUtil.isArrEmpty(servers[0].pass) ? '' : servers[0].users[0].pass,
+            ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].pass,
         );
     }
 
@@ -912,7 +1071,7 @@ Outbound.HttpSettings = class extends CommonClass {
 };
 Outbound.WireguardSettings = class extends CommonClass {
     constructor(
-            mtu=1420, secretKey=Wireguard.generateKeypair().privateKey,
+            mtu=1420, secretKey='',
             address='', workers=2, domainStrategy='', reserved='',
             peers=[new Outbound.WireguardSettings.Peer()], kernelMode=false) {
         super();
@@ -955,7 +1114,7 @@ Outbound.WireguardSettings = class extends CommonClass {
             address: this.address ? this.address.split(",") : [],
             workers: this.workers?? undefined,
             domainStrategy: WireguardDomainStrategy.includes(this.domainStrategy) ? this.domainStrategy : undefined,
-            reserved: this.reserved ? this.reserved.split(",") : undefined,
+            reserved: this.reserved ? this.reserved.split(",").map(Number) : undefined,
             peers: Outbound.WireguardSettings.Peer.toJsonArray(this.peers),
             kernelMode: this.kernelMode,
         };

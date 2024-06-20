@@ -29,7 +29,7 @@
                 ObjectUtil.execute(clientModal.confirm, clientModalApp.client, clientModal.dbInbound.id);
             }
         },
-        show({ title='', okText='{{ i18n "sure" }}', index=null, dbInbound=null, confirm=()=>{}, isEdit=false  }) {
+        show({ title='', okText='{{ i18n "confirm" }}', index=null, dbInbound=null, confirm=()=>{}, isEdit=false  }) {
             this.visible = true;
             this.title = title;
             this.okText = okText;
@@ -70,7 +70,7 @@
             clientModal.visible = false;
             clientModal.loading(false);
         },
-        loading(loading) {
+        loading(loading=true) {
             clientModal.confirmLoading = loading;
         },
     };

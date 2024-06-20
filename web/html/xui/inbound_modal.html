@@ -10,7 +10,7 @@
         title: '',
         visible: false,
         confirmLoading: false,
-        okText: '{{ i18n "sure" }}',
+        okText: '{{ i18n "confirm" }}',
         isEdit: false,
         confirm: null,
         inbound: new Inbound(),
@@ -18,7 +18,7 @@
         ok() {
             ObjectUtil.execute(inModal.confirm, inModal.inbound, inModal.dbInbound);
         },
-        show({ title='', okText='{{ i18n "sure" }}', inbound=null, dbInbound=null, confirm=(inbound, dbInbound)=>{}, isEdit=false  }) {
+        show({ title='', okText='{{ i18n "confirm" }}', inbound=null, dbInbound=null, confirm=(inbound, dbInbound)=>{}, isEdit=false  }) {
             this.title = title;
             this.okText = okText;
             if (inbound) {
@@ -39,7 +39,7 @@
             inModal.visible = false;
             inModal.loading(false);
         },
-        loading(loading) {
+        loading(loading=true) {
             inModal.confirmLoading = loading;
         },
     };

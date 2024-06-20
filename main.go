@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	_ "unsafe"
+
 	"x-ui/config"
 	"x-ui/database"
 	"x-ui/logger"
@@ -318,7 +319,7 @@ func main() {
 			updateTgbotEnableSts(enabletgbot)
 		}
 	default:
-		fmt.Println("except 'run' or 'setting' subcommands")
+		fmt.Println("Invalid subcommands")
 		fmt.Println()
 		runCmd.Usage()
 		fmt.Println()

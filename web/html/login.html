@@ -97,7 +97,7 @@
             <a-col :xs="22" :sm="20" :md="14" :lg="10" :xl="8" :xxl="6" id="login" style="margin: 3rem 0;">
             <a-row type="flex" justify="center">
                 <a-col>
-                    <h1 class="title">{{ i18n "pages.login.title" }}</h1>
+                    <h2 class="title" style="text-align: center;">{{ i18n "pages.login.title" }}</h2>
                 </a-col>
             </a-row>
             <a-row type="flex" justify="center">
@@ -117,8 +117,8 @@
                         <a-form-item>
                             <a-row justify="center" class="centered">
                                 <a-button type="primary" :loading="loading" @click="login" :icon="loading ? 'poweroff' : undefined"
-                                          :style="loading ? { width: '50px' } : { display: 'inline-block', width: '100%' }">
-                                    [[ loading ? '' : '{{ i18n "login" }}' ]]
+                            :style="{ fontWeight: 'bold', width: loading ? '50px' : '100%', display: 'inline-block' }">
+                            [[ loading ? '' : '{{ i18n "login" }}' ]]
                                 </a-button>
                             </a-row>
                         </a-form-item>

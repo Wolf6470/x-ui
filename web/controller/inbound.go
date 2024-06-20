@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
 	"x-ui/database/model"
 	"x-ui/web/service"
 	"x-ui/web/session"
@@ -63,6 +64,7 @@ func (a *InboundController) getInbound(c *gin.Context) {
 	}
 	jsonObj(c, inbound, nil)
 }
+
 func (a *InboundController) getClientTraffics(c *gin.Context) {
 	email := c.Param("email")
 	clientTraffics, err := a.inboundService.GetClientTrafficByEmail(email)
@@ -82,7 +84,11 @@ func (a *InboundController) addInbound(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	inbound.UserId = user.Id
-	inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
+		inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	} else {
+		inbound.Tag = fmt.Sprintf("inbound-%v:%v", inbound.Listen, inbound.Port)
+	}
 
 	needRestart := false
 	inbound, needRestart, err = a.inboundService.AddInbound(inbound)
@@ -144,7 +150,7 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "Client(s) added", nil)
-	if err == nil && needRestart {
+	if needRestart {
 		a.xrayService.SetToNeedRestart()
 	}
 }
@@ -165,7 +171,7 @@ func (a *InboundController) delInboundClient(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "Client deleted", nil)
-	if err == nil && needRestart {
+	if needRestart {
 		a.xrayService.SetToNeedRestart()
 	}
 }
@@ -188,7 +194,7 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "Client updated", nil)
-	if err == nil && needRestart {
+	if needRestart {
 		a.xrayService.SetToNeedRestart()
 	}
 }
@@ -209,7 +215,7 @@ func (a *InboundController) resetClientTraffic(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "traffic reseted", nil)
-	if err == nil && needRestart {
+	if needRestart {
 		a.xrayService.SetToNeedRestart()
 	}
 }
@@ -266,7 +272,11 @@ func (a *InboundController) importInbound(c *gin.Context) {
 	user := session.GetLoginUser(c)
 	inbound.Id = 0
 	inbound.UserId = user.Id
-	inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
+		inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	} else {
+		inbound.Tag = fmt.Sprintf("inbound-%v:%v", inbound.Listen, inbound.Port)
+	}
 
 	for index := range inbound.ClientStats {
 		inbound.ClientStats[index].Id = 0

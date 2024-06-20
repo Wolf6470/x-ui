@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"x-ui/config"
 	"x-ui/database"
 	"x-ui/database/model"
@@ -19,10 +20,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var bot *tgbotapi.BotAPI
-var adminIds []int64
-var isRunning bool
-var hostname string
+var (
+	bot       *tgbotapi.BotAPI
+	adminIds  []int64
+	isRunning bool
+	hostname  string
+)
 
 type LoginStatus byte
 
@@ -132,7 +135,7 @@ func (t *Tgbot) OnReceive() {
 		isAdmin := checkAdmin(tgId)
 		if update.Message == nil {
 			if update.CallbackQuery != nil {
-				t.asnwerCallback(update.CallbackQuery, isAdmin)
+				t.asnwerCallback(update.CallbackQuery)
 			}
 		} else {
 			if update.Message.IsCommand() {
@@ -193,7 +196,7 @@ func (t *Tgbot) answerCommand(message *tgbotapi.Message, chatId int64, isAdmin b
 	t.SendAnswer(chatId, msg, isAdmin)
 }
 
-func (t *Tgbot) asnwerCallback(callbackQuery *tgbotapi.CallbackQuery, isAdmin bool) {
+func (t *Tgbot) asnwerCallback(callbackQuery *tgbotapi.CallbackQuery) {
 	// Respond to the callback query, telling Telegram to show the user
 	// a message with the data received.
 	callback := tgbotapi.NewCallback(callbackQuery.ID, callbackQuery.Data)

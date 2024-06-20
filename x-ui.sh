@@ -133,8 +133,14 @@ custom_version() {
     eval $install_command
 }
 
+# Function to handle the deletion of the script file
+delete_script() {
+    rm "$0"  # Remove the script file itself
+    exit 1
+}
+
 uninstall() {
-    confirm "Are you sure you want to uninstall the panel? xray will also uninstalled!" "n"
+    confirm "Are you sure you want to uninstall the panel? xray will also uninstalled!" " n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -148,14 +154,14 @@ uninstall() {
     systemctl reset-failed
     rm /etc/x-ui/ -rf
     rm /usr/local/x-ui/ -rf
-
+    echo -e "\nUninstalled Successfully."
     echo ""
-    echo -e "Uninstalled Successfully，If you want to remove this script，then after exiting the script run ${green}rm /usr/bin/x-ui -f${plain} to delete it."
+    echo -e "If you need to install this panel again, you can use below command:"
+    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)${plain}"
     echo ""
-
-    if [[ $# == 0 ]]; then
-        before_show_menu
-    fi
+    # Trap the SIGTERM signal
+    trap delete_script SIGTERM
+    delete_script
 }
 
 reset_user() {
@@ -299,13 +305,6 @@ show_log() {
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
-}
-
-install_bbr() {
-    # temporary workaround for installing bbr
-    bash <(curl -L -s https://raw.githubusercontent.com/teddysun/across/master/bbr.sh)
-    echo ""
-    before_show_menu
 }
 
 update_shell() {
@@ -624,6 +623,195 @@ ssl_cert_issue_CF() {
     fi
 }
 
+firewall_menu() {
+    echo -e "${green}\t1.${plain} Install Firewall & open ports"
+    echo -e "${green}\t2.${plain} Allowed List"
+    echo -e "${green}\t3.${plain} Delete Ports from List"
+    echo -e "${green}\t4.${plain} Disable Firewall"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
+    read -p "Choose an option: " choice
+    case "$choice" in
+    0)
+        show_menu
+        ;;
+    1)
+        open_ports
+        ;;
+    2)
+        sudo ufw status
+        ;;
+    3)
+        delete_ports
+        ;;
+    4)
+        sudo ufw disable
+        ;;
+    *) echo "Invalid choice" ;;
+    esac
+}
+
+open_ports() {
+    if ! command -v ufw &>/dev/null; then
+        echo "ufw firewall is not installed. Installing now..."
+        apt-get update
+        apt-get install -y ufw
+    else
+        echo "ufw firewall is already installed"
+    fi
+
+    # Check if the firewall is inactive
+    if ufw status | grep -q "Status: active"; then
+        echo "firewall is already active"
+    else
+        # Open the necessary ports
+        ufw allow ssh
+        ufw allow http
+        ufw allow https
+        ufw allow 54321/tcp
+
+        # Enable the firewall
+        ufw --force enable
+    fi
+
+    # Prompt the user to enter a list of ports
+    read -p "Enter the ports you want to open (e.g. 80,443,2053 or range 400-500): " ports
+
+    # Check if the input is valid
+    if ! [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
+        echo "Error: Invalid input. Please enter a comma-separated list of ports or a range of ports (e.g. 80,443,2053 or 400-500)." >&2
+        exit 1
+    fi
+
+    # Open the specified ports using ufw
+    IFS=',' read -ra PORT_LIST <<<"$ports"
+    for port in "${PORT_LIST[@]}"; do
+        if [[ $port == *-* ]]; then
+            # Split the range into start and end ports
+            start_port=$(echo $port | cut -d'-' -f1)
+            end_port=$(echo $port | cut -d'-' -f2)
+            # Loop through the range and open each port
+            for ((i = start_port; i <= end_port; i++)); do
+                ufw allow $i
+            done
+        else
+            ufw allow "$port"
+        fi
+    done
+
+    # Confirm that the ports are open
+    ufw status | grep $ports
+}
+
+delete_ports() {
+    # Prompt the user to enter the ports they want to delete
+    read -p "Enter the ports you want to delete (e.g. 80,443,2053 or range 400-500): " ports
+
+    # Check if the input is valid
+    if ! [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
+        echo "Error: Invalid input. Please enter a comma-separated list of ports or a range of ports (e.g. 80,443,2053 or 400-500)." >&2
+        exit 1
+    fi
+
+    # Delete the specified ports using ufw
+    IFS=',' read -ra PORT_LIST <<<"$ports"
+    for port in "${PORT_LIST[@]}"; do
+        if [[ $port == *-* ]]; then
+            # Split the range into start and end ports
+            start_port=$(echo $port | cut -d'-' -f1)
+            end_port=$(echo $port | cut -d'-' -f2)
+            # Loop through the range and delete each port
+            for ((i = start_port; i <= end_port; i++)); do
+                ufw delete allow $i
+            done
+        else
+            ufw delete allow "$port"
+        fi
+    done
+
+    # Confirm that the ports are deleted
+    echo "Deleted the specified ports:"
+    ufw status | grep $ports
+}
+
+bbr_menu() {
+    echo -e "${green}\t1.${plain} Enable BBR"
+    echo -e "${green}\t2.${plain} Disable BBR"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
+    read -p "Choose an option: " choice
+    case "$choice" in
+    0)
+        show_menu
+        ;;
+    1)
+        enable_bbr
+        ;;
+    2)
+        disable_bbr
+        ;;
+    *) echo "Invalid choice" ;;
+    esac
+}
+
+disable_bbr() {
+
+    if ! grep -q "net.core.default_qdisc=fq" /etc/sysctl.conf || ! grep -q "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+        echo -e "${yellow}BBR is not currently enabled.${plain}"
+        exit 0
+    fi
+
+    # Replace BBR with CUBIC configurations
+    sed -i 's/net.core.default_qdisc=fq/net.core.default_qdisc=pfifo_fast/' /etc/sysctl.conf
+    sed -i 's/net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=cubic/' /etc/sysctl.conf
+
+    # Apply changes
+    sysctl -p
+
+    # Verify that BBR is replaced with CUBIC
+    if [[ $(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}') == "cubic" ]]; then
+        echo -e "${green}BBR has been replaced with CUBIC successfully.${plain}"
+    else
+        echo -e "${red}Failed to replace BBR with CUBIC. Please check your system configuration.${plain}"
+    fi
+}
+
+enable_bbr() {
+    if grep -q "net.core.default_qdisc=fq" /etc/sysctl.conf && grep -q "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+        echo -e "${green}BBR is already enabled!${plain}"
+        exit 0
+    fi
+
+    # Check the OS and install necessary packages
+    case "${release}" in
+    ubuntu | debian)
+        apt-get update && apt-get install -yqq --no-install-recommends ca-certificates
+        ;;
+    centos | almalinux | rocky)
+        yum -y update && yum -y install ca-certificates
+        ;;
+    fedora)
+        dnf -y update && dnf -y install ca-certificates
+        ;;
+    *)
+        echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
+        exit 1
+        ;;
+    esac
+
+    # Enable BBR
+    echo "net.core.default_qdisc=fq" | tee -a /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" | tee -a /etc/sysctl.conf
+
+    # Apply changes
+    sysctl -p
+
+    # Verify that BBR is enabled
+    if [[ $(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}') == "bbr" ]]; then
+        echo -e "${green}BBR has been enabled successfully.${plain}"
+    else
+        echo -e "${red}Failed to enable BBR. Please check your system configuration.${plain}"
+    fi
+}
+
 update_geo() {
     cd /usr/local/x-ui/bin
     echo -e "${green}\t1.${plain} Update Geofiles [Recommended choice] "
@@ -659,6 +847,40 @@ update_geo() {
             update_geo
             ;;
     esac
+}
+
+run_speedtest() {
+    # Check if Speedtest is already installed
+    if ! command -v speedtest &>/dev/null; then
+        # If not installed, install it
+        local pkg_manager=""
+        local speedtest_install_script=""
+
+        if command -v dnf &>/dev/null; then
+            pkg_manager="dnf"
+            speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.rpm.sh"
+        elif command -v yum &>/dev/null; then
+            pkg_manager="yum"
+            speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.rpm.sh"
+        elif command -v apt-get &>/dev/null; then
+            pkg_manager="apt-get"
+            speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh"
+        elif command -v apt &>/dev/null; then
+            pkg_manager="apt"
+            speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh"
+        fi
+
+        if [[ -z $pkg_manager ]]; then
+            echo "Error: Package manager not found. You may need to install Speedtest manually."
+            return 1
+        else
+            curl -s $speedtest_install_script | bash
+            $pkg_manager install -y speedtest
+        fi
+    fi
+
+    # Run Speedtest
+    speedtest
 }
 
 show_usage() {
@@ -705,14 +927,16 @@ show_menu() {
   ${green}14.${plain} Enable Autostart
   ${green}15.${plain} Disable Autostart
 ————————————————
-  ${green}16.${plain} A Key Installation BBR (latest kernel)
-  ${green}17.${plain} SSL Certificate Management
-  ${green}18.${plain} Cloudflare SSL Certificate
-  ${green}19.${plain} Update Geo Files
+  ${green}16.${plain} SSL Certificate Management
+  ${green}17.${plain} Cloudflare SSL Certificate
+  ${green}18.${plain} Firewall Management
 ————————————————
+  ${green}19.${plain} Enable or Disable BBR
+  ${green}20.${plain} Update Geo Files
+  ${green}21.${plain} Speedtest by Ookla
  "
     show_status
-    echo && read -p "Please enter your selection [0-19]: " num
+    echo && read -p "Please enter your selection [0-21]: " num
 
     case "${num}" in
     0)
@@ -764,19 +988,25 @@ show_menu() {
         check_install && disable
         ;;
     16)
-        install_bbr
-        ;;
-    17)
         ssl_cert_issue_main
         ;;
-    18)
+    17)
         ssl_cert_issue_CF
         ;;
+    18)
+        firewall_menu
+        ;;
     19)
+        bbr_menu
+        ;;
+    20)
         update_geo
         ;;
+    21)
+        run_speedtest
+        ;;
     *)
-        LOGE "Please enter the correct number [0-19]"
+        LOGE "Please enter the correct number [0-21]"
         ;;
     esac
 }

@@ -25,7 +25,7 @@
                 <tr>
                     <td>{{ i18n "transmission" }}</td><td><a-tag color="blue">[[ inbound.network ]]</a-tag></td>
                 </tr>
-            <template v-if="inbound.isTcp || inbound.isWs || inbound.isH2">
+            <template v-if="inbound.isTcp || inbound.isWs || inbound.isH2 || inbound.isHttpupgrade || inbound.isSplithttp">
                 <tr>
                     <td>{{ i18n "host" }}</td>
                     <td v-if="inbound.host">
@@ -139,7 +139,7 @@
             <tr>
                 <td>
                     <a-tag v-if="infoModal.clientStats && infoModal.clientSettings.totalGB > 0" :color="statsColor(infoModal.clientStats)">
-                        [[ sizeFormat(infoModal.clientSettings.totalGB - infoModal.clientStats.up - infoModal.clientStats.down) ]]
+                        [[ getRemStats() ]]
                     </a-tag>
                 </td>
                 <td>
@@ -162,10 +162,20 @@
         <template v-if="app.subSettings.enable && infoModal.clientSettings.subId">
             <a-divider>Subscription URL</a-divider>
             <a-row>
-                <a-col :sx="24" :md="22"><a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a></a-col>
+                <a-col :sx="24" :md="22">SUB: <a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a></a-col>
                 <a-col :sx="24" :md="2" style="text-align: right;">
                     <a-tooltip title='{{ i18n "copy" }}'>
                         <button class="ant-btn ant-btn-primary" id="copy-sub-link" @click="copyToClipboard('copy-sub-link', infoModal.subLink)">
+                            <a-icon type="snippets"></a-icon>
+                        </button>
+                    </a-tooltip>
+                </a-col>
+            </a-row>
+            <a-row>
+                <a-col :sx="24" :md="22">JSON: <a :href="[[ infoModal.subJsonLink ]]" target="_blank">[[ infoModal.subJsonLink ]]</a></a-col>
+                <a-col :sx="24" :md="2" style="text-align: right;">
+                    <a-tooltip title='{{ i18n "copy" }}'>
+                        <button class="ant-btn ant-btn-primary" id="copy-subJson-link" @click="copyToClipboard('copy-subJson-link', infoModal.subJsonLink)">
                             <a-icon type="snippets"></a-icon>
                         </button>
                     </a-tooltip>
@@ -279,23 +289,49 @@
             </tr>
         <template v-for="(peer, index) in inbound.settings.peers">
             <tr>
-                <td colspan="2"><a-tag>Peer [[ index + 1 ]]</a-tag></td>
+                <td colspan="2"><a-divider>Peer [[ index + 1 ]]</a-divider></td>
             </tr>
             <tr class="client-table-odd-row">
+                <td>{{ i18n "pages.xray.wireguard.secretKey" }}</td>
+                <td>[[ peer.privateKey ]]</td>
+            </tr>
+            <tr>
                 <td>{{ i18n "pages.xray.wireguard.publicKey" }}</td>
                 <td>[[ peer.publicKey ]]</td>
             </tr>
-            <tr>
+            <tr class="client-table-odd-row">
                 <td>{{ i18n "pages.xray.wireguard.psk" }}</td>
                 <td>[[ peer.psk ]]</td>
             </tr>
-            <tr class="client-table-odd-row">
+            <tr>
                 <td>{{ i18n "pages.xray.wireguard.allowedIPs" }}</td>
                 <td>[[ peer.allowedIPs.join(",") ]]</td>
             </tr>
-            <tr>
+            <tr class="client-table-odd-row">
                 <td>Keep Alive</td>
                 <td>[[ peer.keepAlive ]]</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <a-row>
+                        <a-col :span="22" style="overflow-wrap: anywhere;">
+                            <a-tag color="blue">Config</a-tag>
+                            <div 
+                            v-html="infoModal.links[index].replaceAll(`\n`,`<br />`)"
+                            style="border-radius: 1rem; padding: 0.5rem;"
+                            class="client-table-odd-row"></div>
+                        </a-col>
+                        <a-col :span="2" style="text-align: right;">
+                            <a-tooltip title='{{ i18n "copy" }}'>
+                                <button class="ant-btn ant-btn-primary"
+                                    :id="'copy-url-link-'+index"
+                                    @click="copyToClipboard('copy-url-link-'+index, infoModal.links[index])">
+                                    <a-icon type="snippets"></a-icon>
+                                </button>
+                            </a-tooltip>
+                        </a-col>
+                    </a-row>
+                </td>
             </tr>
         </table>
         </template>
@@ -315,6 +351,7 @@
         index: null,
         isExpired: false,
         subLink: '',
+        subJsonLink: '',
         tgLink: '',
         show(dbInbound, index) {
             this.index = index;
@@ -323,10 +360,15 @@
             this.clientSettings = this.inbound.clients ? this.inbound.clients[index] : null;
             this.isExpired = this.inbound.clients ? this.inbound.isExpiry(index): this.dbInbound.isExpiry;
             this.clientStats = this.inbound.clients ? this.dbInbound.clientStats.find(row => row.email === this.clientSettings.email) : [];
-            this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
+            if (this.inbound.protocol == Protocols.WIREGUARD){
+                this.links = this.inbound.genInboundLinks(dbInbound.remark).split('\r\n')
+            } else {
+                this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
+            }
             if (this.clientSettings) {
                 if (this.clientSettings.subId) {
                     this.subLink = this.genSubLink(this.clientSettings.subId);
+                    this.subJsonLink = this.genSubJsonLink(this.clientSettings.subId);
                 }
                 if (this.clientSettings.tgId) {
                     this.tgLink = "https://t.me/" + this.clientSettings.tgId;
@@ -339,6 +381,9 @@
         },
         genSubLink(subID) {
             return app.subSettings.subURI+subID+'?name='+subID;
+        },
+        genSubJsonLink(subID) {
+            return app.subSettings.subJsonURI+subID+'?name='+subID;;
         }
     };
 
@@ -378,7 +423,11 @@
             },
             statsColor(stats) {
                 return usageColor(stats.up + stats.down, app.trafficDiff, stats.total);
-            }
+            },
+            getRemStats() {
+                remained = this.infoModal.clientStats.total - this.infoModal.clientStats.up - this.infoModal.clientStats.down;
+                return remained>0 ? sizeFormat(remained) : '-';
+            },
         },
         
     });

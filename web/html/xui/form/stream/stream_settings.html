@@ -1,6 +1,6 @@
 {{define "form/streamSettings"}}
 <!-- select stream network -->
-<a-form :colon="false" :label-col="{ md: {span:6} }" :wrapper-col="{ md: {span:14} }">
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
     <a-form-item label="{{ i18n "transmission" }}">
         <a-select v-model="inbound.stream.network" @change="streamNetworkChange"
             :dropdown-class-name="themeSwitcher.currentTheme">
@@ -10,6 +10,8 @@
             <a-select-option value="http">HTTP/2</a-select-option>
             <a-select-option value="quic">QUIC</a-select-option>
             <a-select-option value="grpc">gRPC</a-select-option>
+            <a-select-option value="httpupgrade">HttpUpgrade</a-select-option>
+            <a-select-option value="splithttp">SplitHTTP</a-select-option>
         </a-select>
     </a-form-item>
 </a-form>
@@ -43,6 +45,17 @@
 <template v-if="inbound.stream.network === 'grpc'">
     {{template "form/streamGRPC"}}
 </template>
+
+<!-- httpupgrade -->
+<template v-if="inbound.stream.network === 'httpupgrade'">
+    {{template "form/streamHTTPUPGRADE"}}
+</template>
+
+<!-- splithttp -->
+<template v-if="inbound.stream.network === 'splithttp'">
+    {{template "form/streamSplitHTTP"}}
+</template>
+
 <!-- sockopt -->
 <template>
     {{template "form/streamSockopt"}}

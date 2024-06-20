@@ -11,7 +11,7 @@
         title: '',
         visible: false,
         confirmLoading: false,
-        okText: '{{ i18n "sure" }}',
+        okText: '{{ i18n "confirm" }}',
         isEdit: false,
         confirm: null,
         outbound: new Outbound(),
@@ -25,7 +25,7 @@
         ok() {
             ObjectUtil.execute(outModal.confirm, outModal.outbound.toJson());
         },
-        show({ title='', okText='{{ i18n "sure" }}', outbound, confirm=(outbound)=>{}, isEdit=false, tags=[]  }) {
+        show({ title='', okText='{{ i18n "confirm" }}', outbound, confirm=(outbound)=>{}, isEdit=false, tags=[]  }) {
             this.title = title;
             this.okText = okText;
             this.confirm = confirm;
@@ -42,7 +42,7 @@
             outModal.visible = false;
             outModal.loading(false);
         },
-        loading(loading) {
+        loading(loading=true) {
             outModal.confirmLoading = loading;
         },
         check(){
