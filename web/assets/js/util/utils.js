@@ -137,8 +137,8 @@ class RandomUtil {
 
     static randomShortId() {
         let shortIds = new Array(24).fill('');
-        for (var ii = 0; ii < 24; ii++) {
-            for (var jj = 0; jj < this.randomInt(16); jj++){
+        for (var ii = 1; ii < 24; ii++) {
+            for (var jj = 0; jj <= this.randomInt(7); jj++){
                 let randomNum = this.randomInt(256);
                 shortIds[ii] += ('0' + randomNum.toString(16)).slice(-2)
             }

@@ -29,43 +29,100 @@ arch() {
     i*86 | x86) echo '386' ;;
     armv8* | armv8 | arm64 | aarch64) echo 'arm64' ;;
     armv7* | armv7 | arm) echo 'armv7' ;;
+    armv6* | armv6) echo 'armv6' ;;
+    armv5* | armv5) echo 'armv5' ;;
+    s390x) echo 's390x' ;;
     *) echo -e "${green}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
     esac
 }
+
 echo "arch: $(arch)"
 
 os_version=""
-os_version=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | tr -d '.')
 
-if [[ "${release}" == "centos" ]]; then
+if [[ "${release}" == "arch" ]]; then
+    echo "Your OS is Arch Linux"
+elif [[ "${release}" == "parch" ]]; then
+    echo "Your OS is Parch Linux"
+elif [[ "${release}" == "manjaro" ]]; then
+    echo "Your OS is Manjaro"
+elif [[ "${release}" == "armbian" ]]; then
+    echo "Your OS is Armbian"
+elif [[ "${release}" == "opensuse-tumbleweed" ]]; then
+    echo "Your OS is OpenSUSE Tumbleweed"
+elif [[ "${release}" == "openEuler" ]]; then
+    if [[ ${os_version} -lt 2203 ]]; then
+        echo -e "${red} Please use OpenEuler 22.03 or higher ${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "centos" ]]; then
     if [[ ${os_version} -lt 8 ]]; then
         echo -e "${red} Please use CentOS 8 or higher ${plain}\n" && exit 1
     fi
 elif [[ "${release}" == "ubuntu" ]]; then
-    if [[ ${os_version} -lt 20 ]]; then
-        echo -e "${red}please use Ubuntu 20 or higher version! ${plain}\n" && exit 1
+    if [[ ${os_version} -lt 2004 ]]; then
+        echo -e "${red} Please use Ubuntu 20 or higher version!${plain}\n" && exit 1
     fi
-
 elif [[ "${release}" == "fedora" ]]; then
     if [[ ${os_version} -lt 36 ]]; then
-        echo -e "${red}please use Fedora 36 or higher version! ${plain}\n" && exit 1
+        echo -e "${red} Please use Fedora 36 or higher version!${plain}\n" && exit 1
     fi
-
+elif [[ "${release}" == "amzn" ]]; then
+    if [[ ${os_version} != "2023" ]]; then
+        echo -e "${red} Please use Amazon Linux 2023!${plain}\n" && exit 1
+    fi
 elif [[ "${release}" == "debian" ]]; then
-    if [[ ${os_version} -lt 10 ]]; then
-        echo -e "${red} Please use Debian 10 or higher ${plain}\n" && exit 1
+    if [[ ${os_version} -lt 11 ]]; then
+        echo -e "${red} Please use Debian 11 or higher ${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "almalinux" ]]; then
+    if [[ ${os_version} -lt 80 ]]; then
+        echo -e "${red} Please use AlmaLinux 8.0 or higher ${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "rocky" ]]; then
+    if [[ ${os_version} -lt 8 ]]; then
+        echo -e "${red} Please use Rocky Linux 8 or higher ${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "ol" ]]; then
+    if [[ ${os_version} -lt 8 ]]; then
+        echo -e "${red} Please use Oracle Linux 8 or higher ${plain}\n" && exit 1
     fi
 else
-    echo -e "${red}Failed to check the OS version, please contact the author!${plain}" && exit 1
+    echo -e "${red}Your operating system is not supported by this script.${plain}\n"
+    echo "Please ensure you are using one of the following supported operating systems:"
+    echo "- Ubuntu 20.04+"
+    echo "- Debian 11+"
+    echo "- CentOS 8+"
+    echo "- OpenEuler 22.03+"
+    echo "- Fedora 36+"
+    echo "- Arch Linux"
+    echo "- Parch Linux"
+    echo "- Manjaro"
+    echo "- Armbian"
+    echo "- AlmaLinux 8.0+"
+    echo "- Rocky Linux 8+"
+    echo "- Oracle Linux 8+"
+    echo "- OpenSUSE Tumbleweed"
+    echo "- Amazon Linux 2023"
+    exit 1
 fi
 
 install_dependencies() {
     case "${release}" in
-    centos)
+    ubuntu | debian | armbian)
+        apt-get update && apt-get install -y -q wget curl tar tzdata
+        ;;
+    centos | almalinux | rocky | ol)
         yum -y update && yum install -y -q wget curl tar tzdata
         ;;
-    fedora)
+    fedora | amzn)
         dnf -y update && dnf install -y -q wget curl tar tzdata
+        ;;
+    arch | manjaro | parch)
+        pacman -Syu && pacman -Syu --noconfirm wget curl tar tzdata
+        ;;
+    opensuse-tumbleweed)
+        zypper refresh && zypper -q install -y wget curl tar timezone
         ;;
     *)
         apt-get update && apt install -y -q wget curl tar tzdata
@@ -73,38 +130,65 @@ install_dependencies() {
     esac
 }
 
-#This function will be called when user installed x-ui out of sercurity
+gen_random_string() {
+    local length="$1"
+    local random_string=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1)
+    echo "$random_string"
+}
+
 config_after_install() {
-    echo -e "${yellow}Install/update finished! For security it's recommended to modify panel settings ${plain}"
-    read -p "Do you want to continue with the modification [y/n]? ": config_confirm
-    if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-        read -p "Please set up your username:" config_account
-        echo -e "${yellow}Your username will be:${config_account}${plain}"
-        read -p "Please set up your password:" config_password
-        echo -e "${yellow}Your password will be:${config_password}${plain}"
-        read -p "Please set up the panel port:" config_port
-        echo -e "${yellow}Your panel port is:${config_port}${plain}"
-        echo -e "${yellow}Initializing, please wait...${plain}"
-        /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password}
-        echo -e "${yellow}Account name and password set successfully!${plain}"
-        /usr/local/x-ui/x-ui setting -port ${config_port}
-        echo -e "${yellow}Panel port set successfully!${plain}"
-    else
-        echo -e "${red}cancel...${plain}"
-        if [[ ! -f "/etc/x-ui/x-ui.db" ]]; then
-            local usernameTemp=$(head -c 6 /dev/urandom | base64)
-            local passwordTemp=$(head -c 6 /dev/urandom | base64)
-            /usr/local/x-ui/x-ui setting -username ${usernameTemp} -password ${passwordTemp}
-            echo -e "this is a fresh installation,will generate random login info for security concerns:"
+    local existing_username=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'username: .+' | awk '{print $2}')
+    local existing_password=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'password: .+' | awk '{print $2}')
+    local existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
+
+    if [[ ${#existing_webBasePath} -lt 4 ]]; then
+        if [[ "$existing_username" == "admin" && "$existing_password" == "admin" ]]; then
+            local config_webBasePath=$(gen_random_string 15)
+            local config_username=$(gen_random_string 10)
+            local config_password=$(gen_random_string 10)
+
+            read -p "Would you like to customize the Panel Port settings? (If not, random port will be applied) [y/n]: " config_confirm
+            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+                read -p "Please set up the panel port: " config_port
+                echo -e "${yellow}Your Panel Port is: ${config_port}${plain}"
+            else
+                local config_port=$(shuf -i 1024-62000 -n 1)
+                echo -e "${yellow}Generated random port: ${config_port}${plain}"
+            fi
+
+            /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
+            echo -e "This is a fresh installation, generating random login info for security concerns:"
             echo -e "###############################################"
-            echo -e "${green}username:${usernameTemp}${plain}"
-            echo -e "${green}password:${passwordTemp}${plain}"
+            echo -e "${green}Username: ${config_username}${plain}"
+            echo -e "${green}Password: ${config_password}${plain}"
+            echo -e "${green}Port: ${config_port}${plain}"
+            echo -e "${green}WebBasePath: ${config_webBasePath}${plain}"
             echo -e "###############################################"
-            echo -e "${red}if you forgot your login info,you can type x-ui and then type 7 to check after installation${plain}"
+            echo -e "${yellow}If you forgot your login info, you can type 'x-ui settings' to check${plain}"
         else
-            echo -e "${red} this is your upgrade,will keep old settings,if you forgot your login info,you can type x-ui and then type 7 to check${plain}"
+            local config_webBasePath=$(gen_random_string 15)
+            echo -e "${yellow}WebBasePath is missing or too short. Generating a new one...${plain}"
+            /usr/local/x-ui/x-ui setting -webBasePath "${config_webBasePath}"
+            echo -e "${green}New WebBasePath: ${config_webBasePath}${plain}"
+        fi
+    else
+        if [[ "$existing_username" == "admin" && "$existing_password" == "admin" ]]; then
+            local config_username=$(gen_random_string 10)
+            local config_password=$(gen_random_string 10)
+
+            echo -e "${yellow}Default credentials detected. Security update required...${plain}"
+            /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}"
+            echo -e "Generated new random login credentials:"
+            echo -e "###############################################"
+            echo -e "${green}Username: ${config_username}${plain}"
+            echo -e "${green}Password: ${config_password}${plain}"
+            echo -e "###############################################"
+            echo -e "${yellow}If you forgot your login info, you can type 'x-ui settings' to check${plain}"
+        else
+            echo -e "${green}Username, Password, and WebBasePath are properly set. Exiting...${plain}"
         fi
     fi
+
     /usr/local/x-ui/x-ui migrate
 }
 
@@ -183,6 +267,9 @@ install_x-ui() {
     systemctl start x-ui
     echo -e "${green}x-ui v${last_version}${plain} installation finished, it is up and running now..."
     echo -e ""
+    echo -e "You may access the Panel with following URL(s):${yellow}"
+    /usr/local/x-ui/x-ui uri
+    echo -e "${plain}"
     echo "X-UI Control Menu Usage"
     echo "------------------------------------------"
     echo "SUBCOMMANDS:"
@@ -191,6 +278,7 @@ install_x-ui() {
     echo "x-ui stop         - Stop"
     echo "x-ui restart      - Restart"
     echo "x-ui status       - Current Status"
+    echo "x-ui settings     - Current Settings"
     echo "x-ui enable       - Enable Autostart on OS Startup"
     echo "x-ui disable      - Disable Autostart on OS Startup"
     echo "x-ui log          - Check Logs"

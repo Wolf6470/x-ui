@@ -11,6 +11,7 @@ type XraySettingController struct {
 	SettingService     service.SettingService
 	InboundService     service.InboundService
 	XrayService        service.XrayService
+	WarpService        service.WarpService
 }
 
 func NewXraySettingController(g *gin.RouterGroup) *XraySettingController {
@@ -69,16 +70,18 @@ func (a *XraySettingController) warp(c *gin.Context) {
 	var err error
 	switch action {
 	case "data":
-		resp, err = a.XraySettingService.GetWarp()
+		resp, err = a.WarpService.GetWarpData()
+	case "del":
+		err = a.WarpService.DelWarpData()
 	case "config":
-		resp, err = a.XraySettingService.GetWarpConfig()
+		resp, err = a.WarpService.GetWarpConfig()
 	case "reg":
 		skey := c.PostForm("privateKey")
 		pkey := c.PostForm("publicKey")
-		resp, err = a.XraySettingService.RegWarp(skey, pkey)
+		resp, err = a.WarpService.RegWarp(skey, pkey)
 	case "license":
 		license := c.PostForm("license")
-		resp, err = a.XraySettingService.SetWarpLicence(license)
+		resp, err = a.WarpService.SetWarpLicense(license)
 	}
 
 	jsonObj(c, resp, err)

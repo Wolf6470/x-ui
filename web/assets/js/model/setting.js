@@ -34,6 +34,7 @@ class AllSetting {
         this.subURI = "";
         this.subJsonURI = "";
         this.subJsonFragment = "";
+        this.subJsonNoises = "";
         this.subJsonMux = "";
         this.subJsonRules = "";
 

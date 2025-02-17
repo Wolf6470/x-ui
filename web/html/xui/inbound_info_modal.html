@@ -25,7 +25,7 @@
                 <tr>
                     <td>{{ i18n "transmission" }}</td><td><a-tag color="blue">[[ inbound.network ]]</a-tag></td>
                 </tr>
-            <template v-if="inbound.isTcp || inbound.isWs || inbound.isH2 || inbound.isHttpupgrade || inbound.isSplithttp">
+            <template v-if="inbound.isTcp || inbound.isWs || inbound.isHttpupgrade || inbound.isXHTTP">
                 <tr>
                     <td>{{ i18n "host" }}</td>
                     <td v-if="inbound.host">
@@ -44,13 +44,14 @@
                     <td v-else><a-tag color="orange">{{ i18n "none" }}</a-tag></td>
                 </tr>
             </template>
-            
-            <template v-if="inbound.isQuic">
-                <tr><td>quic {{ i18n "encryption" }}</td><td><a-tag>[[ inbound.quicSecurity ]]</a-tag></td></tr>
-                <tr><td>quic {{ i18n "password" }}</td><td><a-tag>[[ inbound.quicKey ]]</a-tag></td></tr>
-                <tr><td>quic {{ i18n "camouflage" }}</td><td><a-tag>[[ inbound.quicType ]]</a-tag></td></tr>
-            </template>
-            
+            <template v-if="inbound.isXHTTP">
+                <tr>
+                  <td>Mode</td>
+                  <td>
+                    <a-tag>[[ inbound.stream.xhttp.mode ]]</a-tag>
+                  </td>
+                </tr>
+              </template>
             <template v-if="inbound.isKcp">
                 <tr><td>kcp {{ i18n "encryption" }}</td><td><a-tag>[[ inbound.kcpType ]]</a-tag></td></tr>
                 <tr><td>kcp {{ i18n "password" }}</td><td><a-tag>[[ inbound.kcpSeed ]]</a-tag></td></tr>
@@ -412,8 +413,8 @@
             },
         },
         methods: {
-            copyToClipboard(elmentId,content) {
-                this.infoModal.clipboard = new ClipboardJS('#' + elmentId, {
+            copyToClipboard(elementId,content) {
+                this.infoModal.clipboard = new ClipboardJS('#' + elementId, {
                         text: () => content,
                     });
                 this.infoModal.clipboard.on('success', () => { 

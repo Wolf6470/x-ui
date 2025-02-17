@@ -31,6 +31,12 @@
                 <a-select-option v-for="tag in balancerModal.outboundTags" :value="tag">[[ tag ]]</a-select-option>
             </a-select>
         </a-form-item>
+        <a-form-item label='{{ i18n "pages.xray.balancer.fallback" }}'>
+            <a-select v-model="balancerModal.balancer.fallbackTag" clearable
+                :dropdown-class-name="themeSwitcher.currentTheme">
+                <a-select-option v-for="tag in [ '', ...balancerModal.outboundTags]" :value="tag">[[ tag ]]</a-select-option>
+            </a-select>
+        </a-form-item>
         </table>
     </a-form>
 </a-modal>
@@ -47,7 +53,8 @@
         balancer: {
             tag: '',
             strategy: 'random',
-            selector: []
+            selector: [],
+            fallbackTag: ''
         },
         outboundTags: [],
         balancerTags:[],
@@ -70,7 +77,8 @@
                 balancerModal.balancer = {
                     tag: '',
                     strategy: 'random',
-                    selector: []
+                    selector: [],
+                    fallbackTag: ''
                 };
             }
             this.balancerTags = balancerTags.filter((tag) => tag != balancer.tag);

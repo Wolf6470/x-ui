@@ -5,7 +5,7 @@ import (
 
 	"x-ui/database/model"
 
-	sessions "github.com/Calidity/gin-sessions"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +19,10 @@ func init() {
 
 func SetLoginUser(c *gin.Context, user *model.User) error {
 	s := sessions.Default(c)
+	s.Options(sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+	})
 	s.Set(loginUser, user)
 	return s.Save()
 }

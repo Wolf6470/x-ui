@@ -45,6 +45,9 @@
             <a-select-option value="udp">UDP</a-select-option>
         </a-select>
     </a-form-item>
+    <a-form-item label='ivCheck'>
+        <a-switch v-model="inbound.settings.ivCheck"></a-switch>
+    </a-form-item>
 </a-form>
 <a-divider style="margin:0;"></a-divider>
 {{end}}

@@ -61,7 +61,11 @@ func html(c *gin.Context, name string, title string, data gin.H) {
 		data = gin.H{}
 	}
 	data["title"] = title
-	data["host"], _, _ = net.SplitHostPort(c.Request.Host)
+	host := c.Request.Host
+	if colonIndex := strings.LastIndex(host, ":"); colonIndex != -1 {
+		host, _, _ = net.SplitHostPort(c.Request.Host)
+	}
+	data["host"] = host
 	data["request_uri"] = c.Request.RequestURI
 	data["base_path"] = c.GetString("base_path")
 	c.HTML(http.StatusOK, name, getContext(data))

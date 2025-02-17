@@ -1,11 +1,11 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 WORKDIR /app
 ARG TARGETARCH 
 RUN apk --no-cache --update add build-base gcc wget unzip
 COPY . .
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
-RUN go build -o build/x-ui main.go
+RUN go build -ldflags "-w -s" -o build/x-ui main.go
 RUN ./DockerInitFiles.sh "$TARGETARCH"
 
 FROM alpine

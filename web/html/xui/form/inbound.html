@@ -41,7 +41,7 @@
                 <a-icon type="question-circle"></a-icon>
             </a-tooltip>
         </template>
-        <a-input-number v-model="dbInbound.totalGB" :min="0"></a-input-number> GB
+        <a-input-number v-model.number="dbInbound.totalGB" :min="0"></a-input-number> GB
     </a-form-item>
 
     <a-form-item>
@@ -112,7 +112,9 @@
 </template>
 
 <!-- sniffing -->
-<template>
-    {{template "form/sniffing"}}
-</template>
+<a-collapse>
+    <a-collapse-panel header='Sniffing'>
+        {{template "form/sniffing"}}
+    </a-collapse-panel>
+</a-collapse>
 {{end}}

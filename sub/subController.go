@@ -3,6 +3,7 @@ package sub
 import (
 	"encoding/base64"
 	"net"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +27,7 @@ func NewSUBController(
 	rModel string,
 	update string,
 	jsonFragment string,
+	jsonNoise string,
 	jsonMux string,
 	jsonRules string,
 ) *SUBController {
@@ -37,7 +39,7 @@ func NewSUBController(
 		updateInterval: update,
 
 		subService:     sub,
-		subJsonService: NewSubJsonService(jsonFragment, jsonMux, jsonRules, sub),
+		subJsonService: NewSubJsonService(jsonFragment, jsonNoise, jsonMux, jsonRules, sub),
 	}
 	a.initRouter(g)
 	return a
@@ -54,7 +56,10 @@ func (a *SUBController) initRouter(g *gin.RouterGroup) {
 
 func (a *SUBController) subs(c *gin.Context) {
 	subId := c.Param("subid")
-	host, _, _ := net.SplitHostPort(c.Request.Host)
+	host := c.Request.Host
+	if colonIndex := strings.LastIndex(host, ":"); colonIndex != -1 {
+		host, _, _ = net.SplitHostPort(c.Request.Host)
+	}
 	subs, header, err := a.subService.GetSubs(subId, host)
 	if err != nil || len(subs) == 0 {
 		c.String(400, "Error!")
@@ -79,7 +84,10 @@ func (a *SUBController) subs(c *gin.Context) {
 
 func (a *SUBController) subJsons(c *gin.Context) {
 	subId := c.Param("subid")
-	host, _, _ := net.SplitHostPort(c.Request.Host)
+	host := c.Request.Host
+	if colonIndex := strings.LastIndex(host, ":"); colonIndex != -1 {
+		host, _, _ = net.SplitHostPort(c.Request.Host)
+	}
 	jsonSub, header, err := a.subJsonService.GetJson(subId, host)
 	if err != nil || len(jsonSub) == 0 {
 		c.String(400, "Error!")

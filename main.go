@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	_ "unsafe"
 
@@ -18,6 +21,8 @@ import (
 	"x-ui/web/service"
 
 	"github.com/op/go-logging"
+	"github.com/shirou/gopsutil/v4/net"
+	xrayCore "github.com/xtls/xray-core/core"
 )
 
 func runWebServer() {
@@ -123,22 +128,35 @@ func showSetting(show bool) {
 		settingService := service.SettingService{}
 		port, err := settingService.GetPort()
 		if err != nil {
-			fmt.Println("get current port failed,error info:", err)
+			fmt.Println("get current port failed, error info:", err)
 		}
+
+		webBasePath, err := settingService.GetBasePath()
+		if err != nil {
+			fmt.Println("get webBasePath failed, error info:", err)
+		}
+
 		userService := service.UserService{}
 		userModel, err := userService.GetFirstUser()
 		if err != nil {
-			fmt.Println("get current user info failed,error info:", err)
+			fmt.Println("get current user info failed, error info:", err)
 		}
+
 		username := userModel.Username
 		userpasswd := userModel.Password
-		if (username == "") || (userpasswd == "") {
+		if username == "" || userpasswd == "" {
 			fmt.Println("current username or password is empty")
 		}
+
 		fmt.Println("current panel settings as follows:")
 		fmt.Println("username:", username)
-		fmt.Println("userpasswd:", userpasswd)
+		fmt.Println("password:", userpasswd)
 		fmt.Println("port:", port)
+		if webBasePath != "" {
+			fmt.Println("webBasePath:", webBasePath)
+		} else {
+			fmt.Println("webBasePath is not set")
+		}
 	}
 }
 
@@ -201,7 +219,72 @@ func updateTgbotSetting(tgBotToken string, tgBotChatid string, tgBotRuntime stri
 	}
 }
 
-func updateSetting(port int, username string, password string) {
+func updateSetting(port int, username string, password string, webBasePath string) {
+	err := database.InitDB(config.GetDBPath())
+	if err != nil {
+		fmt.Println("Database initialization failed:", err)
+		return
+	}
+
+	settingService := service.SettingService{}
+	userService := service.UserService{}
+
+	if port > 0 {
+		err := settingService.SetPort(port)
+		if err != nil {
+			fmt.Println("Failed to set port:", err)
+		} else {
+			fmt.Printf("Port set successfully: %v\n", port)
+		}
+	}
+
+	if username != "" || password != "" {
+		err := userService.UpdateFirstUser(username, password)
+		if err != nil {
+			fmt.Println("Failed to update username and password:", err)
+		} else {
+			fmt.Println("Username and password updated successfully")
+		}
+	}
+
+	if webBasePath != "" {
+		err := settingService.SetBasePath(webBasePath)
+		if err != nil {
+			fmt.Println("Failed to set base URI path:", err)
+		} else {
+			fmt.Println("Base URI path set successfully")
+		}
+	}
+}
+
+func updateCert(publicKey string, privateKey string) {
+	err := database.InitDB(config.GetDBPath())
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if (privateKey != "" && publicKey != "") || (privateKey == "" && publicKey == "") {
+		settingService := service.SettingService{}
+		err = settingService.SetCertFile(publicKey)
+		if err != nil {
+			fmt.Println("set certificate public key failed:", err)
+		} else {
+			fmt.Println("set certificate public key success")
+		}
+
+		err = settingService.SetKeyFile(privateKey)
+		if err != nil {
+			fmt.Println("set certificate private key failed:", err)
+		} else {
+			fmt.Println("set certificate private key success")
+		}
+	} else {
+		fmt.Println("both public and private key should be entered.")
+	}
+}
+
+func getPanelURI() {
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {
 		fmt.Println(err)
@@ -210,21 +293,64 @@ func updateSetting(port int, username string, password string) {
 
 	settingService := service.SettingService{}
 
-	if port > 0 {
-		err := settingService.SetPort(port)
-		if err != nil {
-			fmt.Println("set port failed:", err)
-		} else {
-			fmt.Printf("set port %v success", port)
+	Port, _ := settingService.GetPort()
+	BasePath, _ := settingService.GetBasePath()
+	Listen, _ := settingService.GetListen()
+	Domain, _ := settingService.GetWebDomain()
+	KeyFile, _ := settingService.GetKeyFile()
+	CertFile, _ := settingService.GetCertFile()
+
+	TLS := false
+	if KeyFile != "" && CertFile != "" {
+		TLS = true
+	}
+
+	Proto := ""
+	if TLS {
+		Proto = "https://"
+	} else {
+		Proto = "http://"
+	}
+
+	PortText := fmt.Sprintf(":%d", Port)
+	if (Port == 443 && TLS) || (Port == 80 && !TLS) {
+		PortText = ""
+	}
+
+	if len(Domain) > 0 {
+		fmt.Println(Proto + Domain + PortText + BasePath)
+		return
+	}
+
+	if len(Listen) > 0 {
+		fmt.Println(Proto + Listen + PortText + BasePath)
+		return
+	}
+
+	fmt.Println("Local address:")
+
+	// get ip address
+	netInterfaces, _ := net.Interfaces()
+	for i := 0; i < len(netInterfaces); i++ {
+		if len(netInterfaces[i].Flags) > 2 && netInterfaces[i].Flags[0] == "up" && netInterfaces[i].Flags[1] != "loopback" {
+			addrs := netInterfaces[i].Addrs
+			for _, address := range addrs {
+				IP := strings.Split(address.Addr, "/")[0]
+				if strings.Contains(address.Addr, ".") {
+					fmt.Println(Proto + IP + PortText + BasePath)
+				} else if address.Addr[0:6] != "fe80::" {
+					fmt.Println(Proto + "[" + IP + "]" + PortText + BasePath)
+				}
+			}
 		}
 	}
-	if username != "" || password != "" {
-		userService := service.UserService{}
-		err := userService.UpdateFirstUser(username, password)
-		if err != nil {
-			fmt.Println("set username and password failed:", err)
-		} else {
-			fmt.Println("set username and password success")
+
+	resp, err := http.Get("https://api.ipify.org?format=text")
+	if err == nil {
+		defer resp.Body.Close()
+		ip, err := io.ReadAll(resp.Body)
+		if err == nil {
+			fmt.Printf("\nGlobal address:\n%s%s%s%s\n", Proto, ip, PortText, BasePath)
 		}
 	}
 }
@@ -256,30 +382,37 @@ func main() {
 	var port int
 	var username string
 	var password string
+	var webBasePath string
+	var webCertFile string
+	var webKeyFile string
 	var tgbottoken string
 	var tgbotchatid string
 	var enabletgbot bool
 	var tgbotRuntime string
 	var reset bool
 	var show bool
-	settingCmd.BoolVar(&reset, "reset", false, "reset all settings")
-	settingCmd.BoolVar(&show, "show", false, "show current settings")
-	settingCmd.IntVar(&port, "port", 0, "set panel port")
-	settingCmd.StringVar(&username, "username", "", "set login username")
-	settingCmd.StringVar(&password, "password", "", "set login password")
-	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "set telegram bot token")
-	settingCmd.StringVar(&tgbotRuntime, "tgbotRuntime", "", "set telegram bot cron time")
-	settingCmd.StringVar(&tgbotchatid, "tgbotchatid", "", "set telegram bot chat id")
-	settingCmd.BoolVar(&enabletgbot, "enabletgbot", false, "enable telegram bot notify")
+	settingCmd.BoolVar(&reset, "reset", false, "Reset all settings")
+	settingCmd.BoolVar(&show, "show", false, "Show current settings")
+	settingCmd.IntVar(&port, "port", 0, "Set panel port")
+	settingCmd.StringVar(&username, "username", "", "Set login username")
+	settingCmd.StringVar(&password, "password", "", "Set login password")
+	settingCmd.StringVar(&webBasePath, "webBasePath", "", "Set base path for Panel")
+	settingCmd.StringVar(&webCertFile, "webCert", "", "Set path to public key file for panel")
+	settingCmd.StringVar(&webKeyFile, "webCertKey", "", "Set path to private key file for panel")
+	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "Set token for Telegram bot")
+	settingCmd.StringVar(&tgbotRuntime, "tgbotRuntime", "", "Set telegram bot cron time")
+	settingCmd.StringVar(&tgbotchatid, "tgbotchatid", "", "Set telegram bot chat id")
+	settingCmd.BoolVar(&enabletgbot, "enabletgbot", false, "Enable telegram bot notify")
 
 	oldUsage := flag.Usage
 	flag.Usage = func() {
 		oldUsage()
 		fmt.Println()
 		fmt.Println("Commands:")
-		fmt.Println("    run            run web panel")
-		fmt.Println("    migrate        migrate form other/old x-ui")
-		fmt.Println("    setting        set settings")
+		fmt.Println("    run            Run web panel")
+		fmt.Println("    uri            Show panel URI")
+		fmt.Println("    migrate        Migrate form other/old x-ui")
+		fmt.Println("    setting        Set settings")
 	}
 
 	flag.Parse()
@@ -296,6 +429,8 @@ func main() {
 			return
 		}
 		runWebServer()
+	case "uri":
+		getPanelURI()
 	case "migrate":
 		migrateDb()
 	case "setting":
@@ -307,7 +442,7 @@ func main() {
 		if reset {
 			resetSetting()
 		} else {
-			updateSetting(port, username, password)
+			updateSetting(port, username, password, webBasePath)
 		}
 		if show {
 			showSetting(show)
@@ -318,6 +453,18 @@ func main() {
 		if enabletgbot {
 			updateTgbotEnableSts(enabletgbot)
 		}
+	case "cert":
+		err := settingCmd.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if reset {
+			updateCert("", "")
+		} else {
+			updateCert(webCertFile, webKeyFile)
+		}
+
 	default:
 		fmt.Println("Invalid subcommands")
 		fmt.Println()
@@ -325,4 +472,10 @@ func main() {
 		fmt.Println()
 		settingCmd.Usage()
 	}
+}
+
+func startXray() {
+	conf := xrayCore.Config{}
+	core, _ := xrayCore.New(&conf)
+	core.Start()
 }
