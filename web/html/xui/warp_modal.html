@@ -145,7 +145,7 @@ new Vue({
                             publicKey: peer.public_key,
                             endpoint: peer.endpoint.host,
                         }],
-                        kernelMode: false
+                        noKernelTun: false
                     }
                 });
             }
@@ -174,10 +174,10 @@ new Vue({
         },
         async register(){
             warpModal.loading(true);
-            keys = Wireguard.generateKeypair();
+            const keys = Wireguard.generateKeypair();
             const msg = await HttpUtil.post('/xui/xray/warp/reg',keys);
             if (msg.success) {
-                resp = JSON.parse(msg.obj);
+                const resp = JSON.parse(msg.obj);
                 warpModal.warpData = resp.data;
                 warpModal.warpConfig = resp.config;
                 this.collectConfig();

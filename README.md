@@ -13,10 +13,9 @@
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/alireza7)
 
-- USDT (TRC20): `TYTq73Gj6dJ67qe58JVPD9zpjW2cc9XgVz`
-- Tezos (XTZ):
-`tz2Wnh2SsY1eezXrcLChu6idWpgdHzUFQcts`
-
+<a href="https://nowpayments.io/donation/alireza7" target="_blank" rel="noreferrer noopener">
+   <img src="https://nowpayments.io/images/embeds/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
+</a>
 
 ## Quick Overview
 | Features                               |      Enable?       |
@@ -186,23 +185,6 @@ docker build -t x-ui .
 - HTTPS for secure access to the web panel and subscription service (self-provided domain + SSL certificate)
 - Dark/Light theme
 
-## Recommended OS
-
-- Ubuntu 20.04+
-- Debian 11+
-- CentOS 8+
-- OpenEuler 22.03+
-- Fedora 36+
-- Arch Linux
-- Parch Linux
-- Manjaro
-- Armbian
-- AlmaLinux 8.0+
-- Rocky Linux 8+
-- Oracle Linux 8+
-- OpenSUSE Tubleweed
-- Amazon Linux 2023
-
 ## Preview
 
 ![inbounds](./media/inbounds.png)
@@ -226,7 +208,6 @@ docker build -t x-ui .
 | :----: | ---------------------------------  | ----------------------------------------- |
 | `GET`  | `"/"`                              | Get all inbounds                          |
 | `GET`  | `"/get/:id"`                       | Get inbound with inbound.id               |
-| `GET`  | `"/createbackup"`                  | Telegram bot sends backup to admins       |
 | `POST` | `"/add"`                           | Add inbound                               |
 | `POST` | `"/del/:id"`                       | Delete inbound                            |
 | `POST` | `"/update/:id"`                    | Update inbound                            |
@@ -241,11 +222,33 @@ docker build -t x-ui .
 | `POST` | `"/delDepletedClients/:id"`        | Delete inbound depleted clients (-1: all) |
 | `POST` | `"/onlines"`                       | Get online users ( list of emails )       |
 
+
 \*- The field `clientId` should be filled by:
 
-- `client.id` for VMess and VLESS
-- `client.password` for Trojan
-- `client.email` for Shadowsocks
+  - `client.id` for VMess and VLESS
+  - `client.password` for Trojan
+  - `client.email` for Shadowsocks
+
+
+- `/xui/API/server` base for following actions:
+
+| Method | Path                               | Action                                    |
+| :----: | ---------------------------------  | ----------------------------------------- |
+| `GET`  | `"/status"`                        | Get server status                         |
+| `GET`  | `"/getDb"`                         | Get database backup                       |
+| `GET`  | `"/createbackup"`                  | Telegram bot sends backup to admins       |
+| `GET`  | `"/getConfigJson"`                 | Get config.json                           |
+| `GET`  | `"/getXrayVersion"`                | Get last xray versions                    |
+| `GET`  | `"/getNewVlessEnc"`                | Get new vless enc                         |
+| `GET`  | `"/getNewX25519Cert"`              | Get new x25519 cert                       |
+| `GET`  | `"/getNewmldsa65"`                 | Get new mldsa65                           |
+| `POST` | `"/getNewEchCert"`                 | Get new ech cert                          |
+| `POST` | `"/importDB"`                      | Import database to x-ui                   |
+| `POST` | `"/stopXrayService"`               | Stop xray service                         |
+| `POST` | `"/restartXrayService"`            | Restart xray service                      |
+| `POST` | `"/installXray/:version"`          | Install specific version of xray          |
+| `POST` | `"/logs/:count"`                   | Get panel/xray logs                       |
+
 
 </details>
 

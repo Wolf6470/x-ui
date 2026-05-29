@@ -1,4 +1,9 @@
 name: Docker Image CI
+
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     tags:
@@ -7,10 +12,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
    

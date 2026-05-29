@@ -3,7 +3,7 @@
          :confirm-loading="ruleModal.confirmLoading" :closable="true" :mask-closable="false"
          :ok-text="ruleModal.okText" cancel-text='{{ i18n "close" }}' :class="themeSwitcher.currentTheme">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
-        <a-form-item label='Domain Matcher'>
+        <a-form-item label='{{ i18n "pages.xray.rule.domainMatcher" }}'>
                     <a-select v-model="ruleModal.rule.domainMatcher" :dropdown-class-name="themeSwitcher.currentTheme">
                         <a-select-option v-for="dm in ['','hybrid','linear']" :value="dm">[[ dm ]]</a-select-option>
                     </a-select>
@@ -30,17 +30,17 @@
             </template>
             <a-input v-model.trim="ruleModal.rule.sourcePort"></a-input>
         </a-form-item>
-        <a-form-item label='Network'>
+        <a-form-item label='{{ i18n "pages.xray.rule.network" }}'>
             <a-select v-model="ruleModal.rule.network" :dropdown-class-name="themeSwitcher.currentTheme">
                 <a-select-option v-for="x in ['','tcp','udp','tcp,udp']" :value="x">[[ x ]]</a-select-option>
             </a-select>
         </a-form-item>
-        <a-form-item label='Protocol'>
+        <a-form-item label='{{ i18n "pages.xray.rule.protocol" }}'>
             <a-select v-model="ruleModal.rule.protocol" mode="multiple" :dropdown-class-name="themeSwitcher.currentTheme">
                 <a-select-option v-for="x in ['http','tls','bittorrent']" :value="x">[[ x ]]</a-select-option>
             </a-select>
         </a-form-item>
-        <a-form-item label='Attributes'>
+        <a-form-item label='{{ i18n "pages.xray.rule.attributes" }}'>
             <a-button size="small" style="margin-left: 10px" @click="ruleModal.rule.attrs.push(['', ''])">+</a-button>
         </a-form-item>
         <a-form-item :wrapper-col="{span: 24}">
@@ -97,12 +97,12 @@
             </template>
             <a-input v-model.trim="ruleModal.rule.port"></a-input>
         </a-form-item>
-        <a-form-item label='Inbound Tags'>
+        <a-form-item label='{{ i18n "pages.xray.rule.inboundTags" }}'>
             <a-select v-model="ruleModal.rule.inboundTag" mode="multiple" :dropdown-class-name="themeSwitcher.currentTheme">
                 <a-select-option v-for="tag in ruleModal.inboundTags" :value="tag">[[ tag ]]</a-select-option>
             </a-select>
         </a-form-item>
-        <a-form-item label='Outbound Tag'>
+        <a-form-item label='{{ i18n "pages.xray.rule.outboundTag" }}'>
             <a-select v-model="ruleModal.rule.outboundTag" :dropdown-class-name="themeSwitcher.currentTheme">
                 <a-select-option v-for="tag in ruleModal.outboundTags" :value="tag">[[ tag ]]</a-select-option>
             </a-select>
@@ -195,13 +195,17 @@
             this.isEdit = isEdit;
             this.inboundTags = app.templateSettings.inbounds.filter((i) => !ObjectUtil.isEmpty(i.tag)).map(obj => obj.tag);
             this.inboundTags.push(...app.inboundTags);
+            app.templateSettings.outbounds.filter(o => o.protocol === Protocols.VLESS && o.settings.reverse?.tag).forEach(o => {
+                this.inboundTags.push(o.settings.reverse.tag);
+            });
             if (app.enableDNS && !ObjectUtil.isEmpty(app.dnsTag)) this.inboundTags.push(app.dnsTag)
             this.outboundTags = ["", ...app.templateSettings.outbounds.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag)];
-            if(app.templateSettings.reverse){
-                if(app.templateSettings.reverse.bridges) {
-                    this.inboundTags.push(...app.templateSettings.reverse.bridges.map(b => b.tag));
+            if (app.clientReverseTags) {
+                app.clientReverseTags.forEach(tag => {
+                if (tag && !this.outboundTags.includes(tag)) {
+                    this.outboundTags.push(tag);
                 }
-                if(app.templateSettings.reverse.portals) this.outboundTags.push(...app.templateSettings.reverse.portals.map(b => b.tag));
+                });
             }
             if (app.templateSettings.routing && app.templateSettings.routing.balancers) {
                 this.balancerTags = [ "", ...app.templateSettings.routing.balancers.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag)];
@@ -220,13 +224,13 @@
             newRule = {};
             rule.type = "field";
             rule.domainMatcher = value.domainMatcher;
-            rule.domain = value.domain.length>0 ? value.domain.split(',') : [];
-            rule.ip = value.ip.length>0 ? value.ip.split(',') : [];
+            rule.domain = value.domain.length>0 ? value.domain.split(',').map(s => s.trim()) : [];
+            rule.ip = value.ip.length>0 ? value.ip.split(',').map(s => s.trim()) : [];
             rule.port = value.port;
             rule.sourcePort = value.sourcePort;
             rule.network = value.network;
-            rule.source = value.source.length>0 ? value.source.split(',') : [];
-            rule.user = value.user.length>0 ? value.user.split(',') : [];
+            rule.source = value.source.length>0 ? value.source.split(',').map(s => s.trim()) : [];
+            rule.user = value.user.length>0 ? value.user.split(',').map(s => s.trim()) : [];
             rule.inboundTag = value.inboundTag;
             rule.protocol = value.protocol;
             rule.attrs = Object.fromEntries(value.attrs);

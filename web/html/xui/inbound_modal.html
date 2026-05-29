@@ -1,6 +1,7 @@
 {{define "inboundModal"}}
 <a-modal id="inbound-modal" v-model="inModal.visible" :title="inModal.title" @ok="inModal.ok"
          :confirm-loading="inModal.confirmLoading" :closable="true" :mask-closable="false"
+         width="800px" body-style="padding: 0;"
          :ok-text="inModal.okText" cancel-text='{{ i18n "close" }}' :class="themeSwitcher.currentTheme">
     {{template "form/inbound"}}
 </a-modal>
@@ -26,6 +27,11 @@
             } else {
                 this.inbound = new Inbound();
             }
+            if (this.inbound.protocol === Protocols.VLESS && this.inbound.settings) {
+                if (!this.inbound.settings.testseed || !Array.isArray(this.inbound.settings.testseed) || this.inbound.settings.testseed.length < 4) {
+                    this.inbound.settings.testseed = [900, 500, 900, 256].slice();
+                }
+            }
             if (dbInbound) {
                 this.dbInbound = new DBInbound(dbInbound);
             } else {
@@ -42,6 +48,27 @@
         loading(loading=true) {
             inModal.confirmLoading = loading;
         },
+        updateTestseed(index, value) {
+            if (!inModal.inbound || !inModal.inbound.settings) return;
+            if (!inModal.inbound.settings.testseed || !Array.isArray(inModal.inbound.settings.testseed)) {
+                inModal.inbound.settings.testseed = [900, 500, 900, 256];
+            }
+            while (inModal.inbound.settings.testseed.length <= index) {
+                inModal.inbound.settings.testseed.push(0);
+            }
+            inModal.inbound.settings.testseed[index] = value;
+        },
+        setRandomTestseed() {
+            if (!inModal.inbound || !inModal.inbound.settings) return;
+            if (!inModal.inbound.settings.testseed || !Array.isArray(inModal.inbound.settings.testseed) || inModal.inbound.settings.testseed.length < 4) {
+                inModal.inbound.settings.testseed = [900, 500, 900, 256].slice();
+            }
+            inModal.inbound.settings.testseed = [Math.floor(Math.random()*1000), Math.floor(Math.random()*1000), Math.floor(Math.random()*1000), Math.floor(Math.random()*1000)];
+        },
+        resetTestseed() {
+            if (!inModal.inbound || !inModal.inbound.settings) return;
+            inModal.inbound.settings.testseed = [900, 500, 900, 256].slice();
+        }
     };
 
     new Vue({
@@ -97,6 +124,9 @@
                         client.flow = "";
                     });
                 }
+                if (inModal.inbound.stream.network != 'kcp') {
+                    inModal.inbound.stream.finalmask.udp = [];
+                }
             },
             SSMethodChange() {
                 if (this.inModal.inbound.isSSMultiUser) {
@@ -124,7 +154,7 @@
             },
             async getNewX25519Cert(){
                 inModal.loading(true);
-                const msg = await HttpUtil.post('/server/getNewX25519Cert');
+                const msg = await HttpUtil.get('/server/getNewX25519Cert');
                 inModal.loading(false);
                 if (!msg.success) {
                     return;
@@ -132,6 +162,80 @@
                 inModal.inbound.stream.reality.privateKey = msg.obj.privateKey;
                 inModal.inbound.stream.reality.settings.publicKey = msg.obj.publicKey;
             },
+            clearX25519Cert() {
+                this.inbound.stream.reality.privateKey = '';
+                this.inbound.stream.reality.settings.publicKey = '';
+            },
+            async getNewmldsa65() {
+                inModal.loading(true);
+                const msg = await HttpUtil.get('/server/getNewmldsa65');
+                inModal.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                inModal.inbound.stream.reality.mldsa65Seed = msg.obj.seed;
+                inModal.inbound.stream.reality.settings.mldsa65Verify = msg.obj.verify;
+            },
+            clearMldsa65() {
+                this.inbound.stream.reality.mldsa65Seed = '';
+                this.inbound.stream.reality.settings.mldsa65Verify = '';
+            },
+            async getNewEchCert() {
+                inModal.loading(true);
+                const msg = await HttpUtil.post('/server/getNewEchCert', {sni: inModal.inbound.stream.tls.sni});
+                inModal.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                inModal.inbound.stream.tls.echServerKeys = msg.obj.echServerKeys;
+                inModal.inbound.stream.tls.settings.echConfigList = msg.obj.echConfigList;
+            },
+            clearEchCert() {
+                this.inbound.stream.tls.echServerKeys = '';
+                this.inbound.stream.tls.settings.echConfigList = '';
+            },
+            async getNewVlessEnc() {
+                inModal.loading(true);
+                const msg = await HttpUtil.get('/server/getNewVlessEnc');
+                inModal.loading(false);
+
+                if (!msg.success) {
+                    return;
+                }
+
+                const auths = msg.obj.auths || [];
+                const selected = inModal.inbound.settings.selectedAuth;
+                const block = auths.find(a => a.label === selected);
+
+                if (!block) {
+                    console.error("No auth block for", selected);
+                    return;
+                }
+
+                inModal.inbound.settings.decryption = block.decryption;
+                inModal.inbound.settings.encryption = block.encryption;
+            },
+            clearVlessEnc() {
+                this.inbound.settings.decryption = 'none';
+                this.inbound.settings.encryption = 'none';
+                this.inbound.settings.selectedAuth = undefined;
+            },
+            updateTestseed(index, value) {
+                if (!this.inbound.settings.testseed || !Array.isArray(this.inbound.settings.testseed)) {
+                    this.$set(this.inbound.settings, 'testseed', [900, 500, 900, 256]);
+                }
+                while (this.inbound.settings.testseed.length <= index) {
+                    this.inbound.settings.testseed.push(0);
+                }
+                this.$set(this.inbound.settings.testseed, index, value);
+            },
+            setRandomTestseed() {
+                const newSeed = [Math.floor(Math.random()*1000), Math.floor(Math.random()*1000), Math.floor(Math.random()*1000), Math.floor(Math.random()*1000)];
+                this.$set(this.inbound.settings, 'testseed', newSeed);
+            },
+            resetTestseed() {
+                this.$set(this.inbound.settings, 'testseed', [900, 500, 900, 256]);
+            }
         },
     });
 

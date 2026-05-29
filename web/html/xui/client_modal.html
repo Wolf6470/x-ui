@@ -54,6 +54,7 @@
             switch(protocol){
                 case Protocols.TROJAN: return client.password;
                 case Protocols.SHADOWSOCKS: return client.email;
+                case Protocols.HYSTERIA: return client.auth;
                 default: return client.id;
             }
         },
@@ -63,6 +64,7 @@
                 case Protocols.VLESS: return clients.push(new Inbound.VLESSSettings.VLESS());
                 case Protocols.TROJAN: return clients.push(new Inbound.TrojanSettings.Trojan());
                 case Protocols.SHADOWSOCKS: return clients.push(new Inbound.ShadowsocksSettings.Shadowsocks(clients[0].method));
+                case Protocols.HYSTERIA: return clients.push(new Inbound.HysteriaSettings.Hysteria());
                 default: return null;
             }
         },

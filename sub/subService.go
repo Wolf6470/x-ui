@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/util/random"
-	"x-ui/web/service"
-	"x-ui/xray"
+	"github.com/alireza0/x-ui/database"
+	"github.com/alireza0/x-ui/database/model"
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/util/common"
+	"github.com/alireza0/x-ui/util/random"
+	"github.com/alireza0/x-ui/web/service"
+	"github.com/alireza0/x-ui/xray"
 
 	"github.com/goccy/go-json"
 )
@@ -104,7 +104,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 		FROM inbounds,
 			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client 
 		WHERE
-			protocol in ('vmess','vless','trojan','shadowsocks')
+			protocol in ('vmess','vless','trojan','shadowsocks','hysteria')
 			AND JSON_EXTRACT(client.value, '$.subId') = ? AND enable = ?
 	)`, subId, true).Find(&inbounds).Error
 	if err != nil {
@@ -155,6 +155,8 @@ func (s *SubService) getLink(inbound *model.Inbound, email string) string {
 		return s.genTrojanLink(inbound, email)
 	case "shadowsocks":
 		return s.genShadowsocksLink(inbound, email)
+	case "hysteria":
+		return s.genHysteriaLink(inbound, email)
 	}
 	return ""
 }
@@ -223,9 +225,17 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 			obj["host"] = host
 		} else {
 			headers, _ := xhttp["headers"].(map[string]interface{})
+			if len(headers) == 0 {
+				if h, ok := searchKey(xhttp["extra"], "headers"); ok {
+					headers, _ = h.(map[string]interface{})
+				}
+			}
 			obj["host"] = searchHost(headers)
 		}
 		obj["mode"] = xhttp["mode"].(string)
+		if xExtra := buildXhttpExtraForShare(xhttp); xExtra != nil {
+			obj["extra"] = xExtra
+		}
 	}
 
 	security, _ := stream["security"].(string)
@@ -285,6 +295,27 @@ func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {
 			if newSecurity != "same" {
 				newObj["tls"] = newSecurity
 			}
+			if utlsValue, ok := ep["utls"].(string); ok && len(utlsValue) > 0 {
+				newObj["fp"] = utlsValue
+			}
+			if sniValue, ok := ep["sni"].(string); ok && len(sniValue) > 0 {
+				newObj["sni"] = sniValue
+			}
+			if alpnValue, ok := ep["alpn"].([]interface{}); ok && len(alpnValue) > 0 {
+				alpn := make([]string, len(alpnValue))
+				for i, a := range alpnValue {
+					alpn[i] = a.(string)
+				}
+				newObj["alpn"] = strings.Join(alpn, ",")
+			}
+			if allowInsecureValue, ok := ep["allowInsecure"].(bool); ok && allowInsecureValue {
+				newObj["allowInsecure"] = "1"
+			}
+			if fragmentValue, ok := ep["fragment"].(map[string]interface{}); ok {
+				newObj["packets"], _ = fragmentValue["packets"].(string)
+				newObj["length"], _ = fragmentValue["length"].(string)
+				newObj["interval"], _ = fragmentValue["interval"].(string)
+			}
 			if index > 0 {
 				links += "\n"
 			}
@@ -305,6 +336,9 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 	if inbound.Protocol != model.VLESS {
 		return ""
 	}
+	var vlessSettings model.VLESSSettings
+	_ = json.Unmarshal([]byte(inbound.Settings), &vlessSettings)
+
 	var stream map[string]interface{}
 	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
 	clients, _ := s.inboundService.GetClients(inbound)
@@ -319,6 +353,9 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 	port := inbound.Port
 	streamNetwork := stream["network"].(string)
 	params := make(map[string]string)
+	if vlessSettings.Encryption != "" {
+		params["encryption"] = vlessSettings.Encryption
+	}
 	params["type"] = streamNetwork
 
 	switch streamNetwork {
@@ -371,9 +408,19 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			params["host"] = host
 		} else {
 			headers, _ := xhttp["headers"].(map[string]interface{})
+			if len(headers) == 0 {
+				if h, ok := searchKey(xhttp["extra"], "headers"); ok {
+					headers, _ = h.(map[string]interface{})
+				}
+			}
 			params["host"] = searchHost(headers)
 		}
 		params["mode"] = xhttp["mode"].(string)
+		if xExtra := buildXhttpExtraForShare(xhttp); xExtra != nil {
+			if xExtraJSON, err := json.Marshal(xExtra); err == nil {
+				params["extra"] = string(xExtraJSON)
+			}
+		}
 	}
 	security, _ := stream["security"].(string)
 	if security == "tls" {
@@ -429,6 +476,11 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 					params["fp"] = fp
 				}
 			}
+			if pqvValue, ok := searchKey(realitySettings, "mldsa65Verify"); ok {
+				if pqv, ok := pqvValue.(string); ok && len(pqv) > 0 {
+					params["pqv"] = pqv
+				}
+			}
 			params["spx"] = "/" + random.Seq(15)
 		}
 
@@ -450,6 +502,27 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := int(ep["port"].(float64))
+			if utlsValue, ok := ep["utls"].(string); ok && len(utlsValue) > 0 {
+				params["fp"] = utlsValue
+			}
+			if sniValue, ok := ep["sni"].(string); ok && len(sniValue) > 0 {
+				params["sni"] = sniValue
+			}
+			if alpnValue, ok := ep["alpn"].([]interface{}); ok && len(alpnValue) > 0 {
+				alpn := make([]string, len(alpnValue))
+				for i, a := range alpnValue {
+					alpn[i] = a.(string)
+				}
+				params["alpn"] = strings.Join(alpn, ",")
+			}
+			if allowInsecureValue, ok := ep["allowInsecure"].(bool); ok && allowInsecureValue {
+				params["allowInsecure"] = "1"
+			}
+			if fragmentValue, ok := ep["fragment"].(map[string]interface{}); ok {
+				params["packets"] = fragmentValue["packets"].(string)
+				params["length"] = fragmentValue["length"].(string)
+				params["interval"] = fragmentValue["interval"].(string)
+			}
 			link := fmt.Sprintf("vless://%s@%s:%d", uuid, dest, port)
 
 			if newSecurity != "same" {
@@ -565,9 +638,19 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			params["host"] = host
 		} else {
 			headers, _ := xhttp["headers"].(map[string]interface{})
+			if len(headers) == 0 {
+				if h, ok := searchKey(xhttp["extra"], "headers"); ok {
+					headers, _ = h.(map[string]interface{})
+				}
+			}
 			params["host"] = searchHost(headers)
 		}
 		params["mode"] = xhttp["mode"].(string)
+		if xExtra := buildXhttpExtraForShare(xhttp); xExtra != nil {
+			if xExtraJSON, err := json.Marshal(xExtra); err == nil {
+				params["extra"] = string(xExtraJSON)
+			}
+		}
 	}
 	security, _ := stream["security"].(string)
 	if security == "tls" {
@@ -619,6 +702,11 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 					params["fp"] = fp
 				}
 			}
+			if pqvValue, ok := searchKey(realitySettings, "mldsa65Verify"); ok {
+				if pqv, ok := pqvValue.(string); ok && len(pqv) > 0 {
+					params["pqv"] = pqv
+				}
+			}
 			params["spx"] = "/" + random.Seq(15)
 		}
 	}
@@ -636,6 +724,27 @@ func (s *SubService) genTrojanLink(inbound *model.Inbound, email string) string 
 			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := int(ep["port"].(float64))
+			if utlsValue, ok := ep["utls"].(string); ok && len(utlsValue) > 0 {
+				params["fp"] = utlsValue
+			}
+			if sniValue, ok := ep["sni"].(string); ok && len(sniValue) > 0 {
+				params["sni"] = sniValue
+			}
+			if alpnValue, ok := ep["alpn"].([]interface{}); ok && len(alpnValue) > 0 {
+				alpn := make([]string, len(alpnValue))
+				for i, a := range alpnValue {
+					alpn[i] = a.(string)
+				}
+				params["alpn"] = strings.Join(alpn, ",")
+			}
+			if allowInsecureValue, ok := ep["allowInsecure"].(bool); ok && allowInsecureValue {
+				params["allowInsecure"] = "1"
+			}
+			if fragmentValue, ok := ep["fragment"].(map[string]interface{}); ok {
+				params["packets"] = fragmentValue["packets"].(string)
+				params["length"] = fragmentValue["length"].(string)
+				params["interval"] = fragmentValue["interval"].(string)
+			}
 			link := fmt.Sprintf("trojan://%s@%s:%d", password, dest, port)
 
 			if newSecurity != "same" {
@@ -755,9 +864,19 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			params["host"] = host
 		} else {
 			headers, _ := xhttp["headers"].(map[string]interface{})
+			if len(headers) == 0 {
+				if h, ok := searchKey(xhttp["extra"], "headers"); ok {
+					headers, _ = h.(map[string]interface{})
+				}
+			}
 			params["host"] = searchHost(headers)
 		}
 		params["mode"] = xhttp["mode"].(string)
+		if xExtra := buildXhttpExtraForShare(xhttp); xExtra != nil {
+			if xExtraJSON, err := json.Marshal(xExtra); err == nil {
+				params["extra"] = string(xExtraJSON)
+			}
+		}
 	}
 
 	security, _ := stream["security"].(string)
@@ -803,6 +922,27 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 			newSecurity, _ := ep["forceTls"].(string)
 			dest, _ := ep["dest"].(string)
 			port := int(ep["port"].(float64))
+			if utlsValue, ok := ep["utls"].(string); ok && len(utlsValue) > 0 {
+				params["fp"] = utlsValue
+			}
+			if sniValue, ok := ep["sni"].(string); ok && len(sniValue) > 0 {
+				params["sni"] = sniValue
+			}
+			if alpnValue, ok := ep["alpn"].([]interface{}); ok && len(alpnValue) > 0 {
+				alpn := make([]string, len(alpnValue))
+				for i, a := range alpnValue {
+					alpn[i] = a.(string)
+				}
+				params["alpn"] = strings.Join(alpn, ",")
+			}
+			if allowInsecureValue, ok := ep["allowInsecure"].(bool); ok && allowInsecureValue {
+				params["allowInsecure"] = "1"
+			}
+			if fragmentValue, ok := ep["fragment"].(map[string]interface{}); ok {
+				params["packets"] = fragmentValue["packets"].(string)
+				params["length"] = fragmentValue["length"].(string)
+				params["interval"] = fragmentValue["interval"].(string)
+			}
 			link := fmt.Sprintf("ss://%s@%s:%d", base64.StdEncoding.EncodeToString([]byte(encPart)), dest, port)
 
 			if newSecurity != "same" {
@@ -843,6 +983,121 @@ func (s *SubService) genShadowsocksLink(inbound *model.Inbound, email string) st
 	// Set the new query values on the URL
 	url.RawQuery = q.Encode()
 
+	url.Fragment = s.genRemark(inbound, email, "")
+	return url.String()
+}
+
+func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) string {
+	address := s.address
+	if inbound.Protocol != model.Hysteria {
+		return ""
+	}
+	var stream map[string]interface{}
+	json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+	clients, _ := s.inboundService.GetClients(inbound)
+	clientIndex := -1
+	for i, client := range clients {
+		if client.Email == email {
+			clientIndex = i
+			break
+		}
+	}
+	auth := clients[clientIndex].Auth
+	port := inbound.Port
+	params := make(map[string]string)
+
+	params["security"] = "tls"
+	tlsSetting, _ := stream["tlsSettings"].(map[string]interface{})
+	alpns, _ := tlsSetting["alpn"].([]interface{})
+	var alpn []string
+	for _, a := range alpns {
+		alpn = append(alpn, a.(string))
+	}
+	if len(alpn) > 0 {
+		params["alpn"] = strings.Join(alpn, ",")
+	}
+	if sniValue, ok := searchKey(tlsSetting, "serverName"); ok {
+		params["sni"], _ = sniValue.(string)
+	}
+
+	tlsSettings, _ := searchKey(tlsSetting, "settings")
+	if tlsSetting != nil {
+		if fpValue, ok := searchKey(tlsSettings, "fingerprint"); ok {
+			params["fp"], _ = fpValue.(string)
+		}
+		if insecure, ok := searchKey(tlsSettings, "allowInsecure"); ok {
+			if insecure.(bool) {
+				params["insecure"] = "1"
+			}
+		}
+	}
+
+	var settings map[string]interface{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+	version, _ := settings["version"].(float64)
+	protocol := "hysteria2"
+	if int(version) == 1 {
+		protocol = "hysteria"
+	}
+
+	externalProxies, _ := stream["externalProxy"].([]interface{})
+
+	if len(externalProxies) > 0 {
+		links := ""
+		for index, externalProxy := range externalProxies {
+			ep, _ := externalProxy.(map[string]interface{})
+			newSecurity, _ := ep["forceTls"].(string)
+			dest, _ := ep["dest"].(string)
+			port := int(ep["port"].(float64))
+			if utlsValue, ok := ep["utls"].(string); ok && len(utlsValue) > 0 {
+				params["fp"] = utlsValue
+			}
+			if sniValue, ok := ep["sni"].(string); ok && len(sniValue) > 0 {
+				params["sni"] = sniValue
+			}
+			if alpnValue, ok := ep["alpn"].([]interface{}); ok && len(alpnValue) > 0 {
+				alpn := make([]string, len(alpnValue))
+				for i, a := range alpnValue {
+					alpn[i] = a.(string)
+				}
+				params["alpn"] = strings.Join(alpn, ",")
+			}
+			if allowInsecureValue, ok := ep["allowInsecure"].(bool); ok && allowInsecureValue {
+				params["allowInsecure"] = "1"
+			}
+			if fragmentValue, ok := ep["fragment"].(map[string]interface{}); ok {
+				params["packets"] = fragmentValue["packets"].(string)
+				params["length"] = fragmentValue["length"].(string)
+				params["interval"] = fragmentValue["interval"].(string)
+			}
+			link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, dest, port)
+			if newSecurity != "same" {
+				params["security"] = newSecurity
+			} else {
+				params["security"] = "tls"
+			}
+			url, _ := url.Parse(link)
+			q := url.Query()
+			for k, v := range params {
+				q.Add(k, v)
+			}
+			url.RawQuery = q.Encode()
+			url.Fragment = s.genRemark(inbound, email, ep["remark"].(string))
+			if index > 0 {
+				links += "\n"
+			}
+			links += url.String()
+		}
+		return links
+	}
+
+	link := fmt.Sprintf("%s://%s@%s:%d", protocol, auth, address, port)
+	url, _ := url.Parse(link)
+	q := url.Query()
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	url.RawQuery = q.Encode()
 	url.Fragment = s.genRemark(inbound, email, "")
 	return url.String()
 }
@@ -930,6 +1185,84 @@ func (s *SubService) genRemark(inbound *model.Inbound, email string, extra strin
 		}
 	}
 	return strings.Join(remark, separationChar)
+}
+
+func buildXhttpExtraForShare(xhttp map[string]interface{}) map[string]interface{} {
+	if xhttp == nil {
+		return nil
+	}
+	extra, _ := xhttp["extra"].(map[string]interface{})
+	if len(extra) == 0 {
+		return nil
+	}
+	cleaned := map[string]interface{}{}
+	for k, v := range extra {
+		switch val := v.(type) {
+		case nil:
+			continue
+		case string:
+			if val == "" {
+				continue
+			}
+		case bool:
+			if !val {
+				continue
+			}
+		case float64:
+			if val == 0 {
+				continue
+			}
+		case int:
+			if val == 0 {
+				continue
+			}
+		case int64:
+			if val == 0 {
+				continue
+			}
+		case []interface{}:
+			if len(val) == 0 {
+				continue
+			}
+		case map[string]interface{}:
+			if len(val) == 0 {
+				continue
+			}
+			if k == "xmux" {
+				allEmpty := true
+				for _, mv := range val {
+					switch mvt := mv.(type) {
+					case nil:
+					case string:
+						if mvt != "" {
+							allEmpty = false
+						}
+					case bool:
+						if mvt {
+							allEmpty = false
+						}
+					case float64:
+						if mvt != 0 {
+							allEmpty = false
+						}
+					default:
+						allEmpty = false
+					}
+					if !allEmpty {
+						break
+					}
+				}
+				if allEmpty {
+					continue
+				}
+			}
+		}
+		cleaned[k] = v
+	}
+	if len(cleaned) == 0 {
+		return nil
+	}
+	return cleaned
 }
 
 func searchKey(data interface{}, key string) (interface{}, bool) {

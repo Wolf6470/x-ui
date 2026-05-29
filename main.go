@@ -10,19 +10,20 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	_ "time/tzdata"
 	_ "unsafe"
 
-	"x-ui/config"
-	"x-ui/database"
-	"x-ui/logger"
-	"x-ui/sub"
-	"x-ui/web"
-	"x-ui/web/global"
-	"x-ui/web/service"
+	"github.com/alireza0/x-ui/config"
+	"github.com/alireza0/x-ui/database"
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/sub"
+	"github.com/alireza0/x-ui/util/sys"
+	"github.com/alireza0/x-ui/web"
+	"github.com/alireza0/x-ui/web/global"
+	"github.com/alireza0/x-ui/web/service"
 
 	"github.com/op/go-logging"
 	"github.com/shirou/gopsutil/v4/net"
-	xrayCore "github.com/xtls/xray-core/core"
 )
 
 func runWebServer() {
@@ -33,7 +34,7 @@ func runWebServer() {
 		logger.InitLogger(logging.DEBUG)
 	case config.Info:
 		logger.InitLogger(logging.INFO)
-	case config.Warn:
+	case config.Warning:
 		logger.InitLogger(logging.WARNING)
 	case config.Error:
 		logger.InitLogger(logging.ERROR)
@@ -68,7 +69,7 @@ func runWebServer() {
 
 	sigCh := make(chan os.Signal, 1)
 	// Trap shutdown signals
-	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1)
 	for {
 		sig := <-sigCh
 
@@ -98,6 +99,12 @@ func runWebServer() {
 			if err != nil {
 				log.Println(err)
 				return
+			}
+		case sys.SIGUSR1:
+			logger.Info("Received USR1 signal, restarting xray-core...")
+			err := server.RestartXray()
+			if err != nil {
+				logger.Error("Failed to restart xray-core:", err)
 			}
 		default:
 			server.Stop()
@@ -472,10 +479,4 @@ func main() {
 		fmt.Println()
 		settingCmd.Usage()
 	}
-}
-
-func startXray() {
-	conf := xrayCore.Config{}
-	core, _ := xrayCore.New(&conf)
-	core.Start()
 }

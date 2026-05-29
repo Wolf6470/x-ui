@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"time"
 
-	"x-ui/web/global"
-	"x-ui/web/service"
+	"github.com/alireza0/x-ui/web/global"
+	"github.com/alireza0/x-ui/web/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,16 +39,20 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g = g.Group("/server")
 
 	g.Use(a.checkLogin)
-	g.POST("/status", a.status)
-	g.POST("/getXrayVersion", a.getXrayVersion)
+	g.GET("/status", a.status)
+	g.GET("/getDb", a.getDb)
+	g.GET("/getConfigJson", a.getConfigJson)
+	g.GET("/getNewmldsa65", a.getNewmldsa65)
+	g.GET("/getNewVlessEnc", a.getNewVlessEnc)
+	g.GET("/getXrayVersion", a.getXrayVersion)
+	g.GET("/getNewX25519Cert", a.getNewX25519Cert)
+
+	g.POST("/getNewEchCert", a.getNewEchCert)
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
 	g.POST("/installXray/:version", a.installXray)
 	g.POST("/logs/:count", a.getLogs)
-	g.POST("/getConfigJson", a.getConfigJson)
-	g.GET("/getDb", a.getDb)
 	g.POST("/importDB", a.importDB)
-	g.POST("/getNewX25519Cert", a.getNewX25519Cert)
 }
 
 func (a *ServerController) refreshStatus() {
@@ -185,4 +189,32 @@ func (a *ServerController) getNewX25519Cert(c *gin.Context) {
 		return
 	}
 	jsonObj(c, cert, nil)
+}
+
+func (a *ServerController) getNewmldsa65(c *gin.Context) {
+	cert, err := a.serverService.GetNewmldsa65()
+	if err != nil {
+		jsonMsg(c, "get mldsa65 certificate", err)
+		return
+	}
+	jsonObj(c, cert, nil)
+}
+
+func (a *ServerController) getNewEchCert(c *gin.Context) {
+	sni := c.PostForm("sni")
+	cert, err := a.serverService.GetNewEchCert(sni)
+	if err != nil {
+		jsonMsg(c, "get ech certificate", err)
+		return
+	}
+	jsonObj(c, cert, nil)
+}
+
+func (a *ServerController) getNewVlessEnc(c *gin.Context) {
+	out, err := a.serverService.GetNewVlessEnc()
+	if err != nil {
+		jsonMsg(c, "Failed to generate vless encryption config", err)
+		return
+	}
+	jsonObj(c, out, nil)
 }

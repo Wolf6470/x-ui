@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"x-ui/logger"
-	"x-ui/util/common"
+
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/util/common"
 )
 
 type WarpService struct {
@@ -56,8 +57,7 @@ func (s *WarpService) GetWarpConfig() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	buffer := bytes.NewBuffer(make([]byte, 8192))
-	buffer.Reset()
+	buffer := &bytes.Buffer{}
 	_, err = buffer.ReadFrom(resp.Body)
 	if err != nil {
 		return "", err
@@ -87,8 +87,7 @@ func (s *WarpService) RegWarp(secretKey string, publicKey string) (string, error
 		return "", err
 	}
 	defer resp.Body.Close()
-	buffer := bytes.NewBuffer(make([]byte, 8192))
-	buffer.Reset()
+	buffer := &bytes.Buffer{}
 	_, err = buffer.ReadFrom(resp.Body)
 	if err != nil {
 		return "", err
@@ -144,8 +143,7 @@ func (s *WarpService) SetWarpLicense(license string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	buffer := bytes.NewBuffer(make([]byte, 8192))
-	buffer.Reset()
+	buffer := &bytes.Buffer{}
 	_, err = buffer.ReadFrom(resp.Body)
 	if err != nil {
 		return "", err

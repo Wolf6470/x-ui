@@ -14,15 +14,15 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/config"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/web/controller"
-	"x-ui/web/job"
-	"x-ui/web/locale"
-	"x-ui/web/middleware"
-	"x-ui/web/network"
-	"x-ui/web/service"
+	"github.com/alireza0/x-ui/config"
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/util/common"
+	"github.com/alireza0/x-ui/web/controller"
+	"github.com/alireza0/x-ui/web/job"
+	"github.com/alireza0/x-ui/web/locale"
+	"github.com/alireza0/x-ui/web/middleware"
+	"github.com/alireza0/x-ui/web/network"
+	"github.com/alireza0/x-ui/web/service"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/sessions"
@@ -176,10 +176,23 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sessionMaxAge, err := s.settingService.GetSessionMaxAge()
+	if err != nil {
+		return nil, err
+	}
 	engine.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{basePath + "xui/API/"})))
 	assetsBasePath := basePath + "assets/"
 
 	store := cookie.NewStore(secret)
+	sessionOptions := sessions.Options{
+		Path:     basePath,
+		HttpOnly: true,
+	}
+	if sessionMaxAge > 0 {
+		sessionOptions.MaxAge = sessionMaxAge * 60
+	}
+	store.Options(sessionOptions)
 	engine.Use(sessions.Sessions("x-ui", store))
 	engine.Use(func(c *gin.Context) {
 		c.Set("base_path", basePath)
@@ -228,7 +241,11 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	s.index = controller.NewIndexController(g)
 	s.server = controller.NewServerController(g)
 	s.xui = controller.NewXUIController(g)
-	s.api = controller.NewAPIController(g)
+	s.api = controller.NewAPIController(g, s.server)
+
+	engine.NoRoute(func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNotFound)
+	})
 
 	return engine, nil
 }
@@ -387,4 +404,8 @@ func (s *Server) GetCtx() context.Context {
 
 func (s *Server) GetCron() *cron.Cron {
 	return s.cron
+}
+
+func (s *Server) RestartXray() error {
+	return s.xrayService.RestartXray(true)
 }

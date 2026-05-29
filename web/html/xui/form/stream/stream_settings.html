@@ -1,6 +1,6 @@
 {{define "form/streamSettings"}}
 <!-- select stream network -->
-<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
+<a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }" v-if="inbound.protocol != Protocols.HYSTERIA">
     <a-form-item label='{{ i18n "transmission" }}'>
         <a-select v-model="inbound.stream.network" @change="streamNetworkChange"
             :dropdown-class-name="themeSwitcher.currentTheme">
@@ -34,6 +34,11 @@
     {{template "form/streamGRPC"}}
 </template>
 
+<!-- hysteria -->
+<template v-if="inbound.stream.network === 'hysteria'">
+    {{template "form/streamHysteria"}}
+</template>
+
 <!-- httpupgrade -->
 <template v-if="inbound.stream.network === 'httpupgrade'">
     {{template "form/streamHTTPUPGRADE"}}
@@ -44,8 +49,10 @@
     {{template "form/streamXHTTP"}}
 </template>
 
-<!-- sockopt -->
+<!-- finalmask -->
 <template>
-    {{template "form/streamSockopt"}}
+    {{template "form/streamFinalMask"}}
 </template>
+
+{{template "form/streamSockopt"}}
 {{end}}

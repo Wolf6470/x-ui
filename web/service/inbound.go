@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/xray"
+	"github.com/alireza0/x-ui/database"
+	"github.com/alireza0/x-ui/database/model"
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/util/common"
+	"github.com/alireza0/x-ui/xray"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +18,10 @@ import (
 type InboundService struct {
 	xrayApi xray.XrayAPI
 }
+
+const (
+	safeBatchSize = 500
+)
 
 func (s *InboundService) GetInbounds(userId int) ([]*model.Inbound, error) {
 	db := database.GetDB()
@@ -175,15 +179,20 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 
 	// Secure client ID
 	for _, client := range clients {
-		if inbound.Protocol == "trojan" {
+		switch inbound.Protocol {
+		case "trojan":
 			if client.Password == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
-		} else if inbound.Protocol == "shadowsocks" {
+		case "shadowsocks":
 			if client.Email == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
-		} else {
+		case "hysteria":
+			if client.Auth == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		default:
 			if client.ID == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
@@ -419,15 +428,20 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 
 	// Secure client ID
 	for _, client := range clients {
-		if oldInbound.Protocol == "trojan" {
+		switch oldInbound.Protocol {
+		case "trojan":
 			if client.Password == "" {
 				return false, common.NewError("empty client ID")
 			}
-		} else if oldInbound.Protocol == "shadowsocks" {
+		case "shadowsocks":
 			if client.Email == "" {
 				return false, common.NewError("empty client ID")
 			}
-		} else {
+		case "hysteria":
+			if client.Auth == "" {
+				return false, common.NewError("empty client ID")
+			}
+		default:
 			if client.ID == "" {
 				return false, common.NewError("empty client ID")
 			}
@@ -476,6 +490,7 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 				err1 := s.xrayApi.AddUser(string(oldInbound.Protocol), oldInbound.Tag, map[string]interface{}{
 					"email":    client.Email,
 					"id":       client.ID,
+					"auth":     client.Auth,
 					"flow":     client.Flow,
 					"password": client.Password,
 					"cipher":   cipher,
@@ -510,11 +525,13 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 
 	email := ""
 	client_key := "id"
-	if oldInbound.Protocol == "trojan" {
+	switch oldInbound.Protocol {
+	case "trojan":
 		client_key = "password"
-	}
-	if oldInbound.Protocol == "shadowsocks" {
+	case "shadowsocks":
 		client_key = "email"
+	case "hysteria":
+		client_key = "auth"
 	}
 
 	interfaceClients := settings["clients"].([]interface{})
@@ -607,13 +624,17 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	clientIndex := -1
 	for index, oldClient := range oldClients {
 		oldClientId := ""
-		if oldInbound.Protocol == "trojan" {
+		switch oldInbound.Protocol {
+		case "trojan":
 			oldClientId = oldClient.Password
 			newClientId = clients[0].Password
-		} else if oldInbound.Protocol == "shadowsocks" {
+		case "shadowsocks":
 			oldClientId = oldClient.Email
 			newClientId = clients[0].Email
-		} else {
+		case "hysteria":
+			oldClientId = oldClient.Auth
+			newClientId = clients[0].Auth
+		default:
 			oldClientId = oldClient.ID
 			newClientId = clients[0].ID
 		}
@@ -705,6 +726,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 				"email":    clients[0].Email,
 				"id":       clients[0].ID,
 				"flow":     clients[0].Flow,
+				"auth":     clients[0].Auth,
 				"password": clients[0].Password,
 				"cipher":   cipher,
 			})
@@ -789,6 +811,11 @@ func (s *InboundService) addInboundTraffic(tx *gorm.DB, traffics []*xray.Traffic
 	return nil
 }
 
+type newExpiryTime struct {
+	Email         string
+	NewExpiryTime int64
+}
+
 func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTraffic) (err error) {
 	if len(traffics) == 0 {
 		// Empty onlineUsers
@@ -805,9 +832,18 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		emails = append(emails, traffic.Email)
 	}
 	dbClientTraffics := make([]*xray.ClientTraffic, 0, len(traffics))
-	err = tx.Model(xray.ClientTraffic{}).Where("email IN (?)", emails).Find(&dbClientTraffics).Error
-	if err != nil {
-		return err
+	for i := 0; i < len(emails); i += safeBatchSize {
+		end := i + safeBatchSize
+		if end > len(emails) {
+			end = len(emails)
+		}
+
+		batchClientTraffics := make([]*xray.ClientTraffic, 0, end-i)
+		err = tx.Model(xray.ClientTraffic{}).Where("email IN ?", emails[i:end]).Find(&batchClientTraffics).Error
+		if err != nil {
+			return err
+		}
+		dbClientTraffics = append(dbClientTraffics, batchClientTraffics...)
 	}
 
 	// Avoid empty slice error
@@ -815,7 +851,20 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		return nil
 	}
 
-	dbClientTraffics, err = s.adjustTraffics(tx, dbClientTraffics)
+	inboundExpiryTimeMap := make(map[int][]newExpiryTime, 0)
+	for index, t := range dbClientTraffics {
+		if t.ExpiryTime < 0 {
+			newClientExpiryTime := (time.Now().Unix() * 1000) - int64(t.ExpiryTime)
+			newExpiryTime := newExpiryTime{
+				Email:         t.Email,
+				NewExpiryTime: newClientExpiryTime,
+			}
+			inboundExpiryTimeMap[t.InboundId] = append(inboundExpiryTimeMap[t.InboundId], newExpiryTime)
+			dbClientTraffics[index].ExpiryTime = newClientExpiryTime
+		}
+	}
+
+	err = s.adjustTraffics(tx, inboundExpiryTimeMap)
 	if err != nil {
 		return err
 	}
@@ -836,66 +885,90 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	}
 
 	// Set onlineUsers
-	p.SetOnlineClients(onlineClients)
+	if p != nil {
+		p.SetOnlineClients(onlineClients)
+	}
 
-	err = tx.Save(dbClientTraffics).Error
-	if err != nil {
-		logger.Warning("AddClientTraffic update data ", err)
+	for i := 0; i < len(dbClientTraffics); i += safeBatchSize {
+		end := i + safeBatchSize
+		if end > len(dbClientTraffics) {
+			end = len(dbClientTraffics)
+		}
+
+		err = tx.Save(dbClientTraffics[i:end]).Error
+		if err != nil {
+			logger.Warning("AddClientTraffic update data ", err)
+			return nil
+		}
 	}
 
 	return nil
 }
 
-func (s *InboundService) adjustTraffics(tx *gorm.DB, dbClientTraffics []*xray.ClientTraffic) ([]*xray.ClientTraffic, error) {
-	inboundIds := make([]int, 0, len(dbClientTraffics))
-	for _, dbClientTraffic := range dbClientTraffics {
-		if dbClientTraffic.ExpiryTime < 0 {
-			inboundIds = append(inboundIds, dbClientTraffic.InboundId)
+func (s *InboundService) adjustTraffics(tx *gorm.DB, inboundExpiryTimeMap map[int][]newExpiryTime) error {
+	if len(inboundExpiryTimeMap) == 0 {
+		return nil
+	}
+
+	inboundIds := make([]int, 0)
+	for inId := range inboundExpiryTimeMap {
+		inboundIds = append(inboundIds, inId)
+	}
+	inbounds := make([]*model.Inbound, 0, len(inboundIds))
+	for i := 0; i < len(inboundIds); i += safeBatchSize {
+		end := i + safeBatchSize
+		if end > len(inboundIds) {
+			end = len(inboundIds)
+		}
+
+		batchInbounds := make([]*model.Inbound, 0, end-i)
+		err := tx.Model(model.Inbound{}).Where("id IN ?", inboundIds[i:end]).Find(&batchInbounds).Error
+		if err != nil {
+			return err
+		}
+		inbounds = append(inbounds, batchInbounds...)
+	}
+	for inbound_index := range inbounds {
+		settings := map[string]interface{}{}
+		json.Unmarshal([]byte(inbounds[inbound_index].Settings), &settings)
+		clients, ok := settings["clients"].([]interface{})
+		inbEmails := inboundExpiryTimeMap[inbounds[inbound_index].Id]
+		if ok {
+			var newClients []interface{}
+			for client_index := range clients {
+				c := clients[client_index].(map[string]interface{})
+				for index := range inbEmails {
+					if c["email"] == inbEmails[index].Email {
+						c["expiryTime"] = inbEmails[index].NewExpiryTime
+						break
+					}
+				}
+				newClients = append(newClients, interface{}(c))
+			}
+			settings["clients"] = newClients
+			modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			inbounds[inbound_index].Settings = string(modifiedSettings)
 		}
 	}
 
-	if len(inboundIds) > 0 {
-		var inbounds []*model.Inbound
-		err := tx.Model(model.Inbound{}).Where("id IN (?)", inboundIds).Find(&inbounds).Error
-		if err != nil {
-			return nil, err
+	for i := 0; i < len(inbounds); i += safeBatchSize {
+		end := i + safeBatchSize
+		if end > len(inbounds) {
+			end = len(inbounds)
 		}
-		for inbound_index := range inbounds {
-			settings := map[string]interface{}{}
-			json.Unmarshal([]byte(inbounds[inbound_index].Settings), &settings)
-			clients, ok := settings["clients"].([]interface{})
-			if ok {
-				var newClients []interface{}
-				for client_index := range clients {
-					c := clients[client_index].(map[string]interface{})
-					for traffic_index := range dbClientTraffics {
-						if dbClientTraffics[traffic_index].ExpiryTime < 0 && c["email"] == dbClientTraffics[traffic_index].Email {
-							oldExpiryTime := c["expiryTime"].(float64)
-							newExpiryTime := (time.Now().Unix() * 1000) - int64(oldExpiryTime)
-							c["expiryTime"] = newExpiryTime
-							dbClientTraffics[traffic_index].ExpiryTime = newExpiryTime
-							break
-						}
-					}
-					newClients = append(newClients, interface{}(c))
-				}
-				settings["clients"] = newClients
-				modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
-				if err != nil {
-					return nil, err
-				}
 
-				inbounds[inbound_index].Settings = string(modifiedSettings)
-			}
-		}
-		err = tx.Save(inbounds).Error
+		err := tx.Save(inbounds[i:end]).Error
 		if err != nil {
 			logger.Warning("AddClientTraffic update inbounds ", err)
-			logger.Error(inbounds)
+			break
 		}
 	}
 
-	return dbClientTraffics, nil
+	return nil
 }
 
 func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
@@ -1088,7 +1161,7 @@ func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model
 	clientTraffic.Email = client.Email
 	clientTraffic.Total = client.TotalGB
 	clientTraffic.ExpiryTime = client.ExpiryTime
-	clientTraffic.Enable = true
+	clientTraffic.Enable = client.Enable
 	clientTraffic.Up = 0
 	clientTraffic.Down = 0
 	clientTraffic.Reset = client.Reset
@@ -1101,7 +1174,7 @@ func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *mod
 	result := tx.Model(xray.ClientTraffic{}).
 		Where("email = ?", email).
 		Updates(map[string]interface{}{
-			"enable":      true,
+			"enable":      client.Enable,
 			"email":       client.Email,
 			"total":       client.TotalGB,
 			"expiry_time": client.ExpiryTime,
@@ -1397,6 +1470,24 @@ func (s *InboundService) GetInboundTags() (string, error) {
 	return string(tags), nil
 }
 
+func (s *InboundService) GetClientReverseTags() (string, error) {
+	db := database.GetDB()
+	var rawTags []string
+	err := db.Raw(`
+		SELECT DISTINCT JSON_EXTRACT(client.value, '$.reverse.tag')
+		FROM inbounds,
+			JSON_EACH(JSON_EXTRACT(inbounds.settings, '$.clients')) AS client
+		WHERE inbounds.protocol = 'vless'
+		  AND JSON_EXTRACT(client.value, '$.reverse.tag') IS NOT NULL
+		  AND JSON_EXTRACT(client.value, '$.reverse.tag') != ''
+	`).Scan(&rawTags).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return "[]", err
+	}
+	result, _ := json.Marshal(rawTags)
+	return string(result), nil
+}
+
 func (s *InboundService) MigrationRequirements() {
 	db := database.GetDB()
 	tx := db.Begin()
@@ -1404,6 +1495,9 @@ func (s *InboundService) MigrationRequirements() {
 	defer func() {
 		if err == nil {
 			tx.Commit()
+			if dbErr := db.Exec(`VACUUM "main"`).Error; dbErr != nil {
+				logger.Warningf("VACUUM failed: %v", dbErr)
+			}
 		} else {
 			tx.Rollback()
 		}

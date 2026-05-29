@@ -3,10 +3,11 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"runtime"
 	"sync"
 
-	"x-ui/logger"
-	"x-ui/xray"
+	"github.com/alireza0/x-ui/logger"
+	"github.com/alireza0/x-ui/xray"
 
 	"go.uber.org/atomic"
 )
@@ -32,7 +33,19 @@ func (s *XrayService) GetXrayErr() error {
 	if p == nil {
 		return nil
 	}
-	return p.GetErr()
+
+	err := p.GetErr()
+	if err == nil {
+		return nil
+	}
+
+	if runtime.GOOS == "windows" && err.Error() == "exit status 1" {
+		// exit status 1 on Windows means that Xray process was killed
+		// as we kill process to stop in on Windows, this is not an error
+		return nil
+	}
+
+	return err
 }
 
 func (s *XrayService) GetXrayResult() string {
@@ -45,7 +58,15 @@ func (s *XrayService) GetXrayResult() string {
 	if p == nil {
 		return ""
 	}
+
 	result = p.GetResult()
+
+	if runtime.GOOS == "windows" && result == "exit status 1" {
+		// exit status 1 on Windows means that Xray process was killed
+		// as we kill process to stop in on Windows, this is not an error
+		return ""
+	}
+
 	return result
 }
 
@@ -114,10 +135,10 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 					}
 				}
 				for key := range c {
-					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" {
+					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
 						delete(c, key)
 					}
-					if c["flow"] == "xtls-rprx-vision-udp443" {
+					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
 						c["flow"] = "xtls-rprx-vision"
 					}
 				}

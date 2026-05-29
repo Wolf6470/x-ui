@@ -34,75 +34,6 @@ fi
 
 echo "The OS release is: $release"
 
-os_version=""
-os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | tr -d '.')
-
-if [[ "${release}" == "arch" ]]; then
-    echo "Your OS is Arch Linux"
-elif [[ "${release}" == "parch" ]]; then
-    echo "Your OS is Parch Linux"
-elif [[ "${release}" == "manjaro" ]]; then
-    echo "Your OS is Manjaro"
-elif [[ "${release}" == "armbian" ]]; then
-    echo "Your OS is Armbian"
-elif [[ "${release}" == "opensuse-tumbleweed" ]]; then
-    echo "Your OS is OpenSUSE Tumbleweed"
-elif [[ "${release}" == "openEuler" ]]; then
-    if [[ ${os_version} -lt 2203 ]]; then
-        echo -e "${red} Please use OpenEuler 22.03 or higher ${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "centos" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red} Please use CentOS 8 or higher ${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "ubuntu" ]]; then
-    if [[ ${os_version} -lt 2004 ]]; then
-        echo -e "${red} Please use Ubuntu 20 or higher version!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "fedora" ]]; then
-    if [[ ${os_version} -lt 36 ]]; then
-        echo -e "${red} Please use Fedora 36 or higher version!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "amzn" ]]; then
-    if [[ ${os_version} != "2023" ]]; then
-        echo -e "${red} Please use Amazon Linux 2023!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "debian" ]]; then
-    if [[ ${os_version} -lt 11 ]]; then
-        echo -e "${red} Please use Debian 11 or higher ${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "almalinux" ]]; then
-    if [[ ${os_version} -lt 80 ]]; then
-        echo -e "${red} Please use AlmaLinux 8.0 or higher ${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "rocky" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red} Please use Rocky Linux 8 or higher ${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "ol" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red} Please use Oracle Linux 8 or higher ${plain}\n" && exit 1
-    fi
-else
-    echo -e "${red}Your operating system is not supported by this script.${plain}\n"
-    echo "Please ensure you are using one of the following supported operating systems:"
-    echo "- Ubuntu 20.04+"
-    echo "- Debian 11+"
-    echo "- CentOS 8+"
-    echo "- OpenEuler 22.03+"
-    echo "- Fedora 36+"
-    echo "- Arch Linux"
-    echo "- Parch Linux"
-    echo "- Manjaro"
-    echo "- Armbian"
-    echo "- AlmaLinux 8.0+"
-    echo "- Rocky Linux 8+"
-    echo "- Oracle Linux 8+"
-    echo "- OpenSUSE Tumbleweed"
-    echo "- Amazon Linux 2023"
-    exit 1
-fi
-
 confirm() {
     if [[ $# > 1 ]]; then
         echo && read -p "$1 [Default $2]: " temp
@@ -210,15 +141,24 @@ uninstall() {
 }
 
 reset_user() {
-    confirm "Reset your username and password to admin?" "n"
+    confirm "Are you sure to reset the username and password of the panel?" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
         fi
         return 0
     fi
-    /usr/local/x-ui/x-ui setting -username admin -password admin
-    echo -e "Username and password have been reset to ${green}admin${plain}, Please restart the panel now."
+
+    read -rp "Please set the login username [default is a random username]: " config_account
+    [[ -z $config_account ]] && config_account=$(gen_random_string 10)
+    read -rp "Please set the login password [default is a random password]: " config_password
+    [[ -z $config_password ]] && config_password=$(gen_random_string 18)
+    /usr/local/x-ui/x-ui setting -username "${config_account}" -password "${config_password}"
+    
+    echo -e "Panel login username has been reset to: ${green} ${config_account} ${plain}"
+    echo -e "Panel login password has been reset to: ${green} ${config_password} ${plain}"
+    echo -e "${green} Please use the new login username and password to access the X-UI panel. Also remember them! ${plain}"
+
     confirm_restart
 }
 
@@ -277,6 +217,9 @@ get_uri() {
     fi
     LOGI "You may access the Panel with following URL(s):"
     echo -e "${yellow}${info}${plain}"
+    if [[ $# == 0 ]]; then
+        before_show_menu
+    fi
 }
 
 set_port() {
@@ -342,6 +285,16 @@ restart() {
     else
         LOGE "Panel restart failed, Probably because it takes longer than two seconds to start, Please check the log information later"
     fi
+    if [[ $# == 0 ]]; then
+        before_show_menu
+    fi
+}
+
+restart_xray() {
+    systemctl reload x-ui
+    LOGI "xray-core Restart signal sent successfully, Please check the log information to confirm whether xray restarted successfully"
+    sleep 2
+    show_xray_status
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
@@ -1113,6 +1066,7 @@ show_usage() {
     echo "x-ui start        - Start"
     echo "x-ui stop         - Stop"
     echo "x-ui restart      - Restart"
+    echo "x-ui restart-xray - Restart xray-core"
     echo "x-ui status       - Current Status"
     echo "x-ui settings     - Current Settings"
     echo "x-ui enable       - Enable Autostart on OS Startup"
@@ -1145,19 +1099,20 @@ show_menu() {
   ${green}10.${plain} Start
   ${green}11.${plain} Stop
   ${green}12.${plain} Restart
-  ${green}13.${plain} Check State
-  ${green}14.${plain} Check Logs
+  ${green}13.${plain} Restart Xray
+  ${green}14.${plain} Check State
+  ${green}15.${plain} Check Logs
 ————————————————
-  ${green}15.${plain} Enable Autostart
-  ${green}16.${plain} Disable Autostart
+  ${green}16.${plain} Enable Autostart
+  ${green}17.${plain} Disable Autostart
 ————————————————
-  ${green}17.${plain} SSL Certificate Management
-  ${green}18.${plain} Cloudflare SSL Certificate
-  ${green}19.${plain} Firewall Management
+  ${green}18.${plain} SSL Certificate Management
+  ${green}19.${plain} Cloudflare SSL Certificate
+  ${green}20.${plain} Firewall Management
 ————————————————
-  ${green}20.${plain} Enable or Disable BBR
-  ${green}21.${plain} Update Geo Files
-  ${green}22.${plain} Speedtest by Ookla
+  ${green}21.${plain} Enable or Disable BBR
+  ${green}22.${plain} Update Geo Files
+  ${green}23.${plain} Speedtest by Ookla
  "
     show_status
     echo && read -p "Please enter your selection [0-22]: " num
@@ -1203,37 +1158,40 @@ show_menu() {
         check_install && restart
         ;;
     13)
-        check_install && status
+        check_install && restart_xray
         ;;
     14)
-        check_install && show_log
+        check_install && status
         ;;
     15)
-        check_install && enable
+        check_install && show_log
         ;;
     16)
-        check_install && disable
+        check_install && enable
         ;;
     17)
-        ssl_cert_issue_main
+        check_install && disable
         ;;
     18)
-        ssl_cert_issue_CF
+        ssl_cert_issue_main
         ;;
     19)
-        firewall_menu
+        ssl_cert_issue_CF
         ;;
     20)
-        bbr_menu
+        firewall_menu
         ;;
     21)
-        update_geo
+        bbr_menu
         ;;
     22)
+        update_geo
+        ;;
+    23)
         run_speedtest
         ;;
     *)
-        LOGE "Please enter the correct number [0-22]"
+        LOGE "Please enter the correct number [0-23]"
         ;;
     esac
 }
@@ -1248,6 +1206,9 @@ if [[ $# > 0 ]]; then
         ;;
     "restart")
         check_install 0 && restart 0
+        ;;
+    "restart-xray")
+        check_install 0 && restart_xray 0
         ;;
     "status")
         check_install 0 && status 0
